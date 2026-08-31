@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Papah & Mamah - Private Workspace</title>
+  
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Firebase SDK (v8 Compat - Hanya App & Database agar 100% Gratis) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --primary: #6366f1;
+      --accent: #06b6d4;
+      --glass-bg: rgba(15, 23, 42, 0.85);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-card: rgba(30, 41, 59, 0.7);
+      --msg-sent: #1e1b4b;
+      --msg-sent-border: #4338ca;
+      --msg-received: #1e293b;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    body {
+      background: var(--bg-dark);
+      background-image: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 70%);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* LOCK & ROLE SCREEN */
+    .overlay-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-box {
+      background: var(--glass-card);
+      border: 1px solid var(--glass-border);
+      padding: 32px 24px;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    .modal-box i.icon-head { font-size: 42px; color: var(--accent); margin-bottom: 16px; }
+    .modal-box h2 { font-size: 22px; margin-bottom: 8px; font-weight: 800; }
+    .modal-box p { font-size: 13px; color: var(--text-sub); margin-bottom: 20px; }
+
+    input[type="password"] {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--glass-border);
+      color: #fff;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      margin-bottom: 14px;
+      outline: none;
+      text-align: center;
+    }
+
+    .btn-action {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .role-grid { display: flex; gap: 12px; margin-top: 10px; }
+    .btn-role {
+      flex: 1;
+      padding: 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .btn-role:hover { background: var(--primary); border-color: var(--primary); }
+    .btn-role i { font-size: 24px; margin-bottom: 8px; display: block; }
+
+    /* CHAT CONTAINER */
+    .app-container {
+      width: 100%;
+      max-width: 768px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 1px solid var(--glass-border);
+      border-right: 1px solid var(--glass-border);
+    }
+
+    /* HEADER */
+    .chat-header {
+      padding: 16px 20px;
+      background: var(--glass-bg);
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .user-profile { display: flex; align-items: center; gap: 12px; }
+    .avatar {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #fff;
+      border: 2px solid var(--accent);
+    }
+
+    .user-info h4 { font-size: 15px; font-weight: 700; color: #fff; }
+    .status-badge { font-size: 11px; color: var(--text-sub); display: flex; align-items: center; gap: 6px; }
+    .dot-status { width: 8px; height: 8px; border-radius: 50%; background: #64748b; }
+    .dot-status.online { background: #10b981; box-shadow: 0 0 8px #10b981; }
+
+    .header-actions { display: flex; gap: 10px; }
+    .btn-icon {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--glass-border);
+      color: #fff;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    /* MESSAGES AREA */
+    .chat-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message-row {
+      display: flex;
+      flex-direction: column;
+      max-width: 75%;
+    }
+
+    .message-row.sent { align-self: flex-end; align-items: flex-end; }
+    .message-row.received { align-self: flex-start; align-items: flex-start; }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+      position: relative;
+    }
+
+    .sent .bubble {
+      background: var(--msg-sent);
+      border: 1px solid var(--msg-sent-border);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .received .bubble {
+      background: var(--msg-received);
+      border: 1px solid var(--glass-border);
+      color: #f1f5f9;
+      border-bottom-left-radius: 4px;
+    }
+
+    .media-preview {
+      max-width: 100%;
+      max-height: 250px;
+      border-radius: 12px;
+      margin-top: 6px;
+      cursor: pointer;
+      object-fit: cover;
+    }
+
+    .media-video {
+      max-width: 100%;
+      border-radius: 12px;
+      margin-top: 6px;
+    }
+
+    .msg-meta {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--text-sub);
+      margin-top: 4px;
+    }
+
+    .tick { font-size: 11px; color: #94a3b8; }
+    .tick.read { color: #38bdf8; }
+
+    /* INPUT BAR */
+    .chat-input-bar {
+      padding: 12px 16px;
+      background: var(--glass-bg);
+      border-top: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-input-bar input[type="text"] {
+      flex: 1;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--glass-border);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 0;
+    }
+
+    .btn-send {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      border: none;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    /* STORAGE MODAL */
+    #storageModal { display: none; }
+    .progress-bar-wrap {
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      height: 12px;
+      overflow: hidden;
+      margin: 16px 0 8px 0;
+    }
+    .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+
+    #toast {
+      position: fixed;
+      bottom: 80px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--accent);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      transition: 0.3s; z-index: 100000;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- STEP 1: LOCK SCREEN -->
+  <div id="lockScreen" class="overlay-screen">
+    <div class="modal-box">
+      <i class="fa-solid fa-lock icon-head"></i>
+      <h2>Private Workspace</h2>
+      <p>Masukkan kata sandi akses ruang chat privat.</p>
+      <input type="password" id="passInput" placeholder="Password..." onkeydown="if(event.key==='Enter') verifyPassword()">
+      <button class="btn-action" onclick="verifyPassword()">Masuk Ruangan <i class="fa-solid fa-key"></i></button>
+    </div>
+  </div>
+
+  <!-- STEP 2: ROLE SELECTION -->
+  <div id="roleScreen" class="overlay-screen" style="display:none;">
+    <div class="modal-box">
+      <i class="fa-solid fa-users-rectangle icon-head"></i>
+      <h2>Pilih Identitas</h2>
+      <p>Kamu mengakses ruang chat ini sebagai siapa?</p>
+      <div class="role-grid">
+        <button class="btn-role" onclick="selectRole('papah')">
+          <i class="fa-solid fa-user-tie"></i>
+          <b>Papah</b>
+        </button>
+        <button class="btn-role" onclick="selectRole('mamah')">
+          <i class="fa-solid fa-user-nurse"></i>
+          <b>Mamah</b>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CHAT APP -->
+  <div class="app-container">
+    <div class="chat-header">
+      <div class="user-profile">
+        <div class="avatar" id="partnerAvatar"><i class="fa-solid fa-user"></i></div>
+        <div class="user-info">
+          <h4 id="partnerName">Pasangan</h4>
+          <div class="status-badge">
+            <div class="dot-status" id="partnerDot"></div>
+            <span id="partnerStatusText">Memuat status...</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" onclick="openStorageModal()" title="Cek Kuota Media"><i class="fa-solid fa-database"></i></button>
+        <button class="btn-icon" onclick="logout()" title="Kunci Aplikasi"><i class="fa-solid fa-lock"></i></button>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="messagesContainer">
+      <!-- Chat bubbles render dynamically -->
+    </div>
+
+    <div class="chat-input-bar">
+      <button class="btn-icon" onclick="document.getElementById('mediaInput').click()"><i class="fa-solid fa-paperclip"></i></button>
+      <input type="file" id="mediaInput" style="display:none;" accept="image/*,video/*,.pdf,.doc,.docx" onchange="handleFileUpload(event)">
+      <input type="text" id="messageInput" placeholder="Ketik pesan..." onkeydown="if(event.key==='Enter') sendMessage()">
+      <button class="btn-send" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+    </div>
+  </div>
+
+  <!-- STORAGE MODAL -->
+  <div id="storageModal" class="overlay-screen">
+    <div class="modal-box">
+      <i class="fa-solid fa-chart-pie icon-head"></i>
+      <h2>Kapasitas Penyimpanan</h2>
+      <p>Total penggunaan memori database cloud.</p>
+      <div class="progress-bar-wrap">
+        <div class="progress-fill" id="storageProgress"></div>
+      </div>
+      <div style="font-size:12px; color:var(--text-sub); margin-bottom:16px;">
+        Terpakai: <b id="storageUsedText" style="color:#fff;">0 MB</b> / 1.024 MB
+      </div>
+      <button class="btn-action" onclick="closeStorageModal()">Tutup</button>
+    </div>
+  </div>
+
+  <div id="toast">Notification</div>
+
+  <script>
+    // =========================================================
+    // TEMPEL KONFIGURASI FIREBASE KAMU DI BAWAH INI
+    // =========================================================
+    const firebaseConfig = {
+  apiKey: "AIzaSyB5qc74Umga6xC0CfNInQbJJqwJ5Ag2KdU",
+  authDomain: "private-chat-hida.firebaseapp.com",
+  databaseURL: "https://private-chat-hida-default-rtdb.firebaseio.com",
+  projectId: "private-chat-hida",
+  storageBucket: "private-chat-hida.firebasestorage.app",
+  messagingSenderId: "758587861808",
+  appId: "1:758587861808:web:ab4d637488ca7cc1c836f5",
+  measurementId: "G-0WG2V4VWR5"
+};
+
+    // Inisialisasi Firebase Realtime Database
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
+    const PASSWORD_AKSES = "maubuka";
+    let currentUser = null; // 'papah' atau 'mamah'
+    let partnerUser = null; // 'mamah' atau 'papah'
+    let totalStorageBytes = 0;
+
+    // Password Check
+    function verifyPassword() {
+      const input = document.getElementById('passInput').value;
+      if (input === PASSWORD_AKSES) {
+        document.getElementById('lockScreen').style.display = 'none';
+        document.getElementById('roleScreen').style.display = 'flex';
+      } else {
+        alert("❌ Password Salah!");
+      }
+    }
+
+    // Role Selection
+    function selectRole(role) {
+      currentUser = role;
+      partnerUser = role === 'papah' ? 'mamah' : 'papah';
+
+      document.getElementById('roleScreen').style.display = 'none';
+      document.getElementById('partnerName').innerText = partnerUser === 'mamah' ? 'Mamah ❤️' : 'Papah 💙';
+      document.getElementById('partnerAvatar').innerHTML = partnerUser === 'mamah' ? '<i class="fa-solid fa-user-nurse"></i>' : '<i class="fa-solid fa-user-tie"></i>';
+
+      initPresence();
+      listenMessages();
+      listenPartnerPresence();
+      calculateStorageUsage();
+    }
+
+    // Presence / Status Online System
+    function initPresence() {
+      const myPresenceRef = db.ref(`presence/${currentUser}`);
+      const connectedRef = db.ref('.info/connected');
+
+      connectedRef.on('value', (snap) => {
+        if (snap.val() === true) {
+          myPresenceRef.onDisconnect().set({
+            status: 'offline',
+            lastSeen: firebase.database.ServerValue.TIMESTAMP
+          });
+          myPresenceRef.set({
+            status: 'online',
+            lastSeen: firebase.database.ServerValue.TIMESTAMP
+          });
+        }
+      });
+    }
+
+    function listenPartnerPresence() {
+      db.ref(`presence/${partnerUser}`).on('value', (snapshot) => {
+        const data = snapshot.val();
+        const dot = document.getElementById('partnerDot');
+        const txt = document.getElementById('partnerStatusText');
+
+        if (data && data.status === 'online') {
+          dot.className = "dot-status online";
+          txt.innerText = "Online";
+        } else if (data && data.lastSeen) {
+          dot.className = "dot-status";
+          const d = new Date(data.lastSeen);
+          const timeStr = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit' }).format(d);
+          txt.innerText = `Terakhir dilihat ${timeStr} WITA`;
+        } else {
+          dot.className = "dot-status";
+          txt.innerText = "Offline";
+        }
+      });
+    }
+
+    // Send Message
+    async function sendMessage(mediaData = null) {
+      const input = document.getElementById('messageInput');
+      const text = input.value.trim();
+
+      if (!text && !mediaData) return;
+
+      const msgRef = db.ref('chats').push();
+      const msgObj = {
+        id: msgRef.key,
+        sender: currentUser,
+        text: text,
+        media: mediaData,
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        status: 'sent'
+      };
+
+      await msgRef.set(msgObj);
+      input.value = '';
+    }
+
+    // Listen Realtime Messages & Update Centang Biru
+    function listenMessages() {
+      const container = document.getElementById('messagesContainer');
+
+      db.ref('chats').on('value', (snapshot) => {
+        container.innerHTML = '';
+        const data = snapshot.val();
+        if (!data) return;
+
+        Object.values(data).forEach((msg) => {
+          // Tandai Dibaca (Centang Biru) jika penerima melihat pesan
+          if (msg.sender === partnerUser && msg.status !== 'read') {
+            db.ref(`chats/${msg.id}`).update({ status: 'read' });
+          }
+
+          const isSent = msg.sender === currentUser;
+          const row = document.createElement('div');
+          row.className = `message-row ${isSent ? 'sent' : 'received'}`;
+
+          const dateObj = new Date(msg.timestamp || Date.now());
+          const timeStr = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit' }).format(dateObj);
+
+          let tickHTML = '';
+          if (isSent) {
+            const isRead = msg.status === 'read';
+            tickHTML = `<i class="fa-solid fa-check-double tick ${isRead ? 'read' : ''}"></i>`;
+          }
+
+          let mediaHTML = '';
+          if (msg.media) {
+            if (msg.media.type.startsWith('image/')) {
+              mediaHTML = `<img src="${msg.media.url}" class="media-preview" onclick="downloadBase64('${msg.media.url}', '${msg.media.name}')">`;
+            } else if (msg.media.type.startsWith('video/')) {
+              mediaHTML = `<video src="${msg.media.url}" controls class="media-video"></video>`;
+            } else {
+              mediaHTML = `<div style="margin-top:6px;"><button onclick="downloadBase64('${msg.media.url}', '${msg.media.name}')" style="background:transparent; border:none; color:var(--accent); cursor:pointer; font-size:12px;"><i class="fa-solid fa-file-arrow-down"></i> Unduh ${escapeHtml(msg.media.name)}</button></div>`;
+            }
+          }
+
+          row.innerHTML = `
+            <div class="bubble">
+              ${escapeHtml(msg.text)}
+              ${mediaHTML}
+              <div class="msg-meta">
+                <span>${timeStr} WITA</span>
+                ${tickHTML}
+              </div>
+            </div>
+          `;
+          container.appendChild(row);
+        });
+
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+
+    // Handle Upload via Base64 (Tanpa Firebase Storage - 100% Gratis)
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) {
+        showToast("⚠️ Ukuran file maksimal 5MB!");
+        return;
+      }
+
+      showToast("⏳ Memproses file...");
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        const mediaObj = {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          url: e.target.result
+        };
+
+        sendMessage(mediaObj);
+        showToast("✅ File terkirim!");
+        document.getElementById('mediaInput').value = '';
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    // Helper Download File Base64
+    function downloadBase64(url, filename) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || 'download';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // Hitung Kapasitas Database
+    function calculateStorageUsage() {
+      db.ref('chats').on('value', (snapshot) => {
+        let bytes = 0;
+        const data = snapshot.val();
+        if (data) {
+          const jsonStr = JSON.stringify(data);
+          bytes = new Blob([jsonStr]).size;
+        }
+        totalStorageBytes = bytes;
+        updateStorageUI();
+      });
+    }
+
+    function updateStorageUI() {
+      const mbUsed = (totalStorageBytes / (1024 * 1024)).toFixed(1);
+      const limitMB = 1024; // Limit 1GB Database Spark Plan
+      const pct = Math.min(((mbUsed / limitMB) * 100).toFixed(1), 100);
+
+      document.getElementById('storageUsedText').innerText = `${mbUsed} MB`;
+      document.getElementById('storageProgress').style.width = `${pct}%`;
+    }
+
+    function openStorageModal() { document.getElementById('storageModal').style.display = 'flex'; }
+    function closeStorageModal() { document.getElementById('storageModal').style.display = 'none'; }
+    function logout() { location.reload(); }
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+    function escapeHtml(t) { return (t || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  </script>
+</body>
+</html>
