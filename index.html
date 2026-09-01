@@ -143,7 +143,7 @@
     }
 
     .user-info h4 { font-size: 15px; font-weight: 600; color: #e9edef; }
-    .status-badge { font-size: 12px; color: var(--text-sub); display: flex; align-items: center; gap: 6px; }
+    .status-badge { font-size: 11.5px; color: var(--text-sub); display: flex; align-items: center; gap: 6px; }
     .dot-status { width: 7px; height: 7px; border-radius: 50%; background: #8696a0; }
     .dot-status.online { background: #00a884; box-shadow: 0 0 6px #00a884; }
 
@@ -177,7 +177,7 @@
     .message-row {
       display: flex;
       flex-direction: column;
-      max-width: 82%;
+      max-width: 85%;
       position: relative;
     }
 
@@ -230,15 +230,22 @@
       display: block;
     }
 
+    .audio-player {
+      width: 220px;
+      height: 36px;
+      margin-top: 4px;
+      outline: none;
+    }
+
     .msg-meta {
       display: inline-flex;
       align-items: center;
       float: right;
       gap: 3px;
-      font-size: 10.5px;
+      font-size: 10px;
       color: rgba(241, 245, 249, 0.6);
       margin-left: 12px;
-      margin-top: 2px;
+      margin-top: 4px;
       position: relative;
       top: 3px;
     }
@@ -283,6 +290,18 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 16px;
       flex-shrink: 0;
+      transition: 0.2s;
+    }
+
+    .btn-send.recording {
+      background: var(--danger);
+      color: #fff;
+      animation: pulse 1s infinite alternate;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.1); }
     }
 
     /* STORAGE MODAL */
@@ -347,7 +366,6 @@
     }
     .admin-avatar-card .avatar { width: 54px; height: 54px; font-size: 24px; }
     
-    /* MEDIA LIST VIEW UNTUK ADMIN */
     .media-list-container {
       max-height: 250px;
       overflow-y: auto;
@@ -407,6 +425,7 @@
 </head>
 <body>
 
+  <!-- LOCK SCREEN -->
   <div id="lockScreen" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-lock icon-head"></i>
@@ -417,6 +436,7 @@
     </div>
   </div>
 
+  <!-- MAIN CHAT APP -->
   <div class="app-container">
     <div class="chat-header">
       <div class="user-profile">
@@ -436,16 +456,18 @@
     </div>
 
     <div class="chat-messages" id="messagesContainer">
-      </div>
+      <!-- Chat bubbles render dynamically -->
+    </div>
 
     <div class="chat-input-bar">
       <button class="btn-icon" onclick="document.getElementById('mediaInput').click()"><i class="fa-solid fa-paperclip"></i></button>
-      <input type="file" id="mediaInput" style="display:none;" accept="image/*,video/*,.pdf,.doc,.docx" onchange="handleFileUpload(event)">
-      <input type="text" id="messageInput" placeholder="Ketik pesan..." onkeydown="if(event.key==='Enter') sendMessage()">
-      <button class="btn-send" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+      <input type="file" id="mediaInput" style="display:none;" accept="image/*,video/*,audio/*,.pdf,.doc,.docx" onchange="handleFileUpload(event)">
+      <input type="text" id="messageInput" placeholder="Ketik pesan..." oninput="toggleActionBtn()" onkeydown="if(event.key==='Enter') handleActionBtn()">
+      <button class="btn-send" id="btnAction" onclick="handleActionBtn()"><i class="fa-solid fa-microphone" id="btnActionIcon"></i></button>
     </div>
   </div>
 
+  <!-- STORAGE MODAL -->
   <div id="storageModal" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-chart-pie icon-head"></i>
@@ -461,6 +483,7 @@
     </div>
   </div>
 
+  <!-- IMAGE LIGHTBOX MODAL -->
   <div id="imageModal" class="overlay-screen">
     <img id="lightboxImg" class="lightbox-img" src="" alt="Preview">
     <div class="lightbox-actions">
@@ -469,6 +492,7 @@
     </div>
   </div>
 
+  <!-- ADMIN DASHBOARD MODAL -->
   <div id="adminModal" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-user-shield icon-head"></i>
@@ -495,7 +519,7 @@
 
       <div class="admin-section">
         <h3><i class="fa-solid fa-folder-open"></i> Kelola & Lihat File Media</h3>
-        <p style="font-size:11px; margin-bottom:8px;">Admin dapat memutar video, memperbesar foto, dan membuka dokumen.</p>
+        <p style="font-size:11px; margin-bottom:8px;">Admin dapat memutar video/suara, memperbesar foto, dan membuka dokumen.</p>
         <div class="media-list-container" id="adminMediaList">
           <div style="font-size:12px; color:var(--text-sub); text-align:center;">Memuat daftar berkas...</div>
         </div>
@@ -534,17 +558,20 @@
     }
     const db = firebase.database();
 
-    // PASSWORD AKSES HAK TINGKAT
     const PASS_PAPAH = "papahchat";
     const PASS_MAMAH = "mamahchat";
     const PASS_ADMIN = "adminchat";
 
-    let currentUser = null; // 'papah', 'mamah', atau 'admin'
+    let currentUser = null;
     let partnerUser = null;
     let totalStorageBytes = 0;
     let userAvatars = { papah: null, mamah: null };
 
-    // VERIFIKASI PASSWORD LOGIN
+    // PEREKAM SUARA
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
     function verifyPassword() {
       const input = document.getElementById('passInput').value.trim();
       
@@ -555,13 +582,11 @@
       } else if (input === PASS_ADMIN) {
         openAdminDashboard();
       } else {
-        // PERBAIKAN: Pesan kesalahan umum tanpa memberikan bocoran hint password
         alert("❌ Password Salah!");
         document.getElementById('passInput').value = '';
       }
     }
 
-    // MULAI SESI CHAT PASANGAN
     function startChatSession(role) {
       currentUser = role;
       partnerUser = role === 'papah' ? 'mamah' : 'papah';
@@ -576,13 +601,11 @@
       calculateStorageUsage();
     }
 
-    // LISTENER AVATAR REALTIME
     function listenAvatars() {
       db.ref('avatars').on('value', (snapshot) => {
         const data = snapshot.val() || {};
         userAvatars = data;
 
-        // Render Avatar Partner di Header
         const partnerAv = data[partnerUser];
         const partnerAvatarElem = document.getElementById('partnerAvatar');
         
@@ -592,7 +615,6 @@
           partnerAvatarElem.innerHTML = partnerUser === 'mamah' ? '<i class="fa-solid fa-user-nurse"></i>' : '<i class="fa-solid fa-user-tie"></i>';
         }
 
-        // Update Avatar Admin Modal jika terbuka
         if (document.getElementById('adminModal').style.display === 'flex') {
           updateAdminAvatarUI();
         }
@@ -617,6 +639,40 @@
       });
     }
 
+    // FORMAT TANGGAL DAN HARI LENGKAP UNTUK HEADER
+    function formatFullDate(timestamp) {
+      if (!timestamp) return "Offline";
+      const date = new Date(timestamp);
+      
+      const options = {
+        timeZone: 'Asia/Makassar',
+        weekday: 'long',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+
+      const formatted = new Intl.DateTimeFormat('id-ID', options).format(date);
+      return `Terakhir dilihat ${formatted} WITA`;
+    }
+
+    // FORMAT TANGGAL DAN HARI SINGKAT UNTUK PESAN
+    function formatMessageTime(timestamp) {
+      const date = new Date(timestamp || Date.now());
+      
+      const options = {
+        timeZone: 'Asia/Makassar',
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+
+      return new Intl.DateTimeFormat('id-ID', options).format(date);
+    }
+
     function listenPartnerPresence() {
       db.ref(`presence/${partnerUser}`).on('value', (snapshot) => {
         const data = snapshot.val();
@@ -628,14 +684,85 @@
           txt.innerText = "Online";
         } else if (data && data.lastSeen) {
           dot.className = "dot-status";
-          const d = new Date(data.lastSeen);
-          const timeStr = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit' }).format(d);
-          txt.innerText = `Terakhir dilihat ${timeStr} WITA`;
+          txt.innerText = formatFullDate(data.lastSeen);
         } else {
           dot.className = "dot-status";
           txt.innerText = "Offline";
         }
       });
+    }
+
+    // TOMBOL KIRIM VS MIKROFON
+    function toggleActionBtn() {
+      const text = document.getElementById('messageInput').value.trim();
+      const icon = document.getElementById('btnActionIcon');
+      
+      if (text.length > 0) {
+        icon.className = "fa-solid fa-paper-plane";
+      } else {
+        icon.className = "fa-solid fa-microphone";
+      }
+    }
+
+    function handleActionBtn() {
+      const text = document.getElementById('messageInput').value.trim();
+      if (text.length > 0) {
+        sendMessage();
+      } else {
+        toggleVoiceRecording();
+      }
+    }
+
+    // PEREKAMAN PESAN SUARA (VOICE NOTE)
+    async function toggleVoiceRecording() {
+      const btn = document.getElementById('btnAction');
+      const icon = document.getElementById('btnActionIcon');
+
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const reader = new FileReader();
+            
+            showToast("⏳ Memproses pesan suara...");
+            reader.onload = function(e) {
+              const mediaObj = {
+                name: `VoiceNote_${Date.now()}.webm`,
+                type: 'audio/webm',
+                size: audioBlob.size,
+                url: e.target.result
+              };
+              sendMessage(mediaObj);
+              showToast("✅ Pesan suara terkirim!");
+            };
+            reader.readAsDataURL(audioBlob);
+
+            // Matikan stream mikrofon
+            stream.getTracks().forEach(track => track.stop());
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          btn.classList.add('recording');
+          icon.className = "fa-solid fa-stop";
+          showToast("🎙️ Merekam suara... Klik lagi untuk berhenti");
+        } catch (err) {
+          alert("❌ Gagal mengakses mikrofon. Izinkan akses mikrofon di browser kamu.");
+        }
+      } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        btn.classList.remove('recording');
+        icon.className = "fa-solid fa-microphone";
+      }
     }
 
     async function sendMessage(mediaData = null) {
@@ -656,6 +783,7 @@
 
       await msgRef.set(msgObj);
       input.value = '';
+      toggleActionBtn();
     }
 
     function listenMessages() {
@@ -677,8 +805,7 @@
           const row = document.createElement('div');
           row.className = `message-row ${isSent ? 'sent' : 'received'}`;
 
-          const dateObj = new Date(msg.timestamp || Date.now());
-          const timeStr = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit' }).format(dateObj);
+          const timeStr = formatMessageTime(msg.timestamp);
 
           let tickHTML = '';
           if (isSent) {
@@ -692,6 +819,8 @@
               mediaHTML = `<div class="media-container"><img src="${msg.media.url}" class="media-preview" onclick="openImageModal('${msg.media.url}', '${msg.media.name}')"></div>`;
             } else if (msg.media.type && msg.media.type.startsWith('video/')) {
               mediaHTML = `<div class="media-container"><video src="${msg.media.url}" controls class="media-video"></video></div>`;
+            } else if (msg.media.type && msg.media.type.startsWith('audio/')) {
+              mediaHTML = `<div style="margin-top:4px;"><audio src="${msg.media.url}" controls class="audio-player"></audio></div>`;
             } else {
               mediaHTML = `<div style="margin-top:4px; margin-bottom:4px;"><button onclick="downloadBase64('${msg.media.url}', '${msg.media.name}')" style="background:transparent; border:none; color:#00a884; cursor:pointer; font-size:12px;"><i class="fa-solid fa-file-arrow-down"></i> Unduh ${escapeHtml(msg.media.name)}</button></div>`;
             }
@@ -787,9 +916,7 @@
       document.getElementById('storageProgress').style.width = `${pct}%`;
     }
 
-    // =========================================================
-    // FITUR DASHBOARD ADMIN
-    // =========================================================
+    // DASHBOARD ADMIN
     function openAdminDashboard() {
       document.getElementById('lockScreen').style.display = 'none';
       document.getElementById('adminModal').style.display = 'flex';
@@ -813,7 +940,6 @@
       const file = event.target.files[0];
       if (!file) return;
 
-      // PERBAIKAN: Batasan 1MB telah dinaikkan hingga 10MB
       if (file.size > 10 * 1024 * 1024) {
         showToast("⚠️ Ukuran foto profil maksimal 10MB!");
         return;
@@ -835,7 +961,6 @@
       reader.readAsDataURL(file);
     }
 
-    // PERBAIKAN: Tampilan Admin dapat memutar Video, memperbesar Foto, dan mengunduh Dokumen
     function loadAdminMediaList() {
       const container = document.getElementById('adminMediaList');
       
@@ -865,6 +990,9 @@
             } else if (msg.media.type && msg.media.type.startsWith('video/')) {
               typeIcon = 'fa-film';
               contentPreviewHTML = `<video src="${msg.media.url}" controls class="media-preview-admin"></video>`;
+            } else if (msg.media.type && msg.media.type.startsWith('audio/')) {
+              typeIcon = 'fa-microphone';
+              contentPreviewHTML = `<audio src="${msg.media.url}" controls style="width:100%; height:32px;"></audio>`;
             } else {
               typeIcon = 'fa-file-pdf';
               contentPreviewHTML = `<button class="btn-action" style="padding:6px 12px; font-size:11px; width:auto;" onclick="downloadBase64('${msg.media.url}', '${msg.media.name}')"><i class="fa-solid fa-file-arrow-down"></i> Buka / Unduh Dokumen</button>`;
