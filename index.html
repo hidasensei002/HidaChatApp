@@ -59,7 +59,7 @@
       padding: 32px 24px;
       border-radius: 20px;
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
       text-align: center;
       box-shadow: 0 20px 50px rgba(0,0,0,0.6);
       max-height: 90vh;
@@ -346,29 +346,47 @@
       gap: 6px;
     }
     .admin-avatar-card .avatar { width: 54px; height: 54px; font-size: 24px; }
+    
+    /* MEDIA LIST VIEW UNTUK ADMIN */
     .media-list-container {
-      max-height: 160px;
+      max-height: 250px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 10px;
       margin-top: 8px;
+      padding-right: 4px;
     }
     .media-item-row {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 10px;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px;
       background: #111b21;
+      border: 1px solid var(--glass-border);
       border-radius: 8px;
       font-size: 12px;
+    }
+    .media-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .media-item-name {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 180px;
+      max-width: 220px;
       color: #e9edef;
+      font-weight: 600;
+    }
+    .media-preview-admin {
+      max-width: 100%;
+      max-height: 140px;
+      object-fit: contain;
+      border-radius: 6px;
+      background: #000;
+      cursor: pointer;
     }
 
     #toast {
@@ -389,7 +407,6 @@
 </head>
 <body>
 
-  <!-- STEP 1: LOCK SCREEN -->
   <div id="lockScreen" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-lock icon-head"></i>
@@ -400,7 +417,6 @@
     </div>
   </div>
 
-  <!-- MAIN CHAT APP -->
   <div class="app-container">
     <div class="chat-header">
       <div class="user-profile">
@@ -420,8 +436,7 @@
     </div>
 
     <div class="chat-messages" id="messagesContainer">
-      <!-- Chat bubbles render dynamically -->
-    </div>
+      </div>
 
     <div class="chat-input-bar">
       <button class="btn-icon" onclick="document.getElementById('mediaInput').click()"><i class="fa-solid fa-paperclip"></i></button>
@@ -431,7 +446,6 @@
     </div>
   </div>
 
-  <!-- STORAGE MODAL -->
   <div id="storageModal" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-chart-pie icon-head"></i>
@@ -447,7 +461,6 @@
     </div>
   </div>
 
-  <!-- IMAGE LIGHTBOX MODAL -->
   <div id="imageModal" class="overlay-screen">
     <img id="lightboxImg" class="lightbox-img" src="" alt="Preview">
     <div class="lightbox-actions">
@@ -456,14 +469,12 @@
     </div>
   </div>
 
-  <!-- ADMIN DASHBOARD MODAL -->
   <div id="adminModal" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-user-shield icon-head"></i>
       <h2>Dashboard Admin</h2>
-      <p>Kelola profil dan penggunaan memori database.</p>
+      <p>Kelola profil dan isi berkas/media database.</p>
 
-      <!-- Ganti Foto Profil -->
       <div class="admin-section">
         <h3><i class="fa-solid fa-image"></i> Kelola Foto Profil</h3>
         <div class="admin-avatar-grid">
@@ -482,10 +493,9 @@
         </div>
       </div>
 
-      <!-- Bersihkan Media -->
       <div class="admin-section">
-        <h3><i class="fa-solid fa-trash-can"></i> Bersihkan Media Chat</h3>
-        <p style="font-size:11px; margin-bottom:8px;">Hapus berkas foto/video besar untuk mengosongkan memori.</p>
+        <h3><i class="fa-solid fa-folder-open"></i> Kelola & Lihat File Media</h3>
+        <p style="font-size:11px; margin-bottom:8px;">Admin dapat memutar video, memperbesar foto, dan membuka dokumen.</p>
         <div class="media-list-container" id="adminMediaList">
           <div style="font-size:12px; color:var(--text-sub); text-align:center;">Memuat daftar berkas...</div>
         </div>
@@ -494,7 +504,6 @@
         </button>
       </div>
 
-      <!-- Reset Database -->
       <div class="admin-section">
         <h3><i class="fa-solid fa-triangle-exclamation"></i> Bersihkan Semua Chat</h3>
         <button class="btn-action btn-danger" style="font-size:12px;" onclick="deleteAllChats()">
@@ -546,7 +555,9 @@
       } else if (input === PASS_ADMIN) {
         openAdminDashboard();
       } else {
-        alert("❌ Password Salah!\nGunakan password papahchat, mamahchat, atau adminchat.");
+        // PERBAIKAN: Pesan kesalahan umum tanpa memberikan bocoran hint password
+        alert("❌ Password Salah!");
+        document.getElementById('passInput').value = '';
       }
     }
 
@@ -707,8 +718,8 @@
       const file = event.target.files[0];
       if (!file) return;
 
-      if (file.size > 5 * 1024 * 1024) {
-        showToast("⚠️ Ukuran file maksimal 5MB!");
+      if (file.size > 10 * 1024 * 1024) {
+        showToast("⚠️ Ukuran file maksimal 10MB!");
         return;
       }
 
@@ -802,8 +813,9 @@
       const file = event.target.files[0];
       if (!file) return;
 
-      if (file.size > 1 * 1024 * 1024) {
-        showToast("⚠️ Ukuran foto profil maksimal 1MB!");
+      // PERBAIKAN: Batasan 1MB telah dinaikkan hingga 10MB
+      if (file.size > 10 * 1024 * 1024) {
+        showToast("⚠️ Ukuran foto profil maksimal 10MB!");
         return;
       }
 
@@ -823,6 +835,7 @@
       reader.readAsDataURL(file);
     }
 
+    // PERBAIKAN: Tampilan Admin dapat memutar Video, memperbesar Foto, dan mengunduh Dokumen
     function loadAdminMediaList() {
       const container = document.getElementById('adminMediaList');
       
@@ -842,14 +855,34 @@
             const sizeMB = (msg.media.size / (1024 * 1024)).toFixed(2);
             const row = document.createElement('div');
             row.className = 'media-item-row';
+            
+            let typeIcon = 'fa-file';
+            let contentPreviewHTML = '';
+
+            if (msg.media.type && msg.media.type.startsWith('image/')) {
+              typeIcon = 'fa-image';
+              contentPreviewHTML = `<img src="${msg.media.url}" class="media-preview-admin" onclick="openImageModal('${msg.media.url}', '${msg.media.name}')" title="Klik untuk memperbesar">`;
+            } else if (msg.media.type && msg.media.type.startsWith('video/')) {
+              typeIcon = 'fa-film';
+              contentPreviewHTML = `<video src="${msg.media.url}" controls class="media-preview-admin"></video>`;
+            } else {
+              typeIcon = 'fa-file-pdf';
+              contentPreviewHTML = `<button class="btn-action" style="padding:6px 12px; font-size:11px; width:auto;" onclick="downloadBase64('${msg.media.url}', '${msg.media.name}')"><i class="fa-solid fa-file-arrow-down"></i> Buka / Unduh Dokumen</button>`;
+            }
+
             row.innerHTML = `
-              <div class="media-item-name" title="${escapeHtml(msg.media.name)}">
-                <i class="fa-solid ${msg.media.type.startsWith('image/') ? 'fa-image' : 'fa-film'}"></i>
-                ${escapeHtml(msg.media.name)} (${sizeMB} MB)
+              <div class="media-item-header">
+                <div class="media-item-name" title="${escapeHtml(msg.media.name)}">
+                  <i class="fa-solid ${typeIcon}"></i>
+                  ${escapeHtml(msg.media.name)} (${sizeMB} MB)
+                </div>
+                <button onclick="deleteSingleMedia('${msg.id}')" style="background:transparent; border:none; color:var(--danger); cursor:pointer; font-size:14px;" title="Hapus Berkas Ini">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
               </div>
-              <button onclick="deleteSingleMedia('${msg.id}')" style="background:transparent; border:none; color:var(--danger); cursor:pointer;">
-                <i class="fa-solid fa-trash"></i>
-              </button>
+              <div style="text-align: center; margin-top: 4px;">
+                ${contentPreviewHTML}
+              </div>
             `;
             container.appendChild(row);
           }
