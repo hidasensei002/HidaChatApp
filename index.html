@@ -10,6 +10,8 @@
   
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- CHART.JS UNTUK DIAGRAM ANALYTICS -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root {
@@ -59,7 +61,7 @@
       padding: 32px 24px;
       border-radius: 20px;
       width: 100%;
-      max-width: 440px;
+      max-width: 480px;
       text-align: center;
       box-shadow: 0 20px 50px rgba(0,0,0,0.6);
       max-height: 90vh;
@@ -385,7 +387,7 @@
       gap: 12px;
     }
 
-    /* ADMIN DASHBOARD MODAL STYLES */
+    /* ADMIN DASHBOARD & ANALYTICS STYLES */
     #adminModal { display: none; z-index: 10000; }
     .admin-section {
       text-align: left;
@@ -456,6 +458,60 @@
       border-radius: 6px;
       background: #000;
       cursor: pointer;
+    }
+
+    /* ANALYTICS UI STYLES */
+    .analytics-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .analytics-tab-btn {
+      flex: 1;
+      padding: 8px;
+      background: #111b21;
+      border: 1px solid var(--glass-border);
+      color: var(--text-sub);
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .analytics-tab-btn.active {
+      background: var(--primary);
+      color: #111b21;
+    }
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .stat-card {
+      background: #111b21;
+      border: 1px solid var(--glass-border);
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-card .val {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .stat-card .lbl {
+      font-size: 10.5px;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+    .chart-container {
+      background: #111b21;
+      border: 1px solid var(--glass-border);
+      padding: 10px;
+      border-radius: 8px;
+      height: 180px;
+      position: relative;
     }
 
     #toast {
@@ -591,7 +647,41 @@
     <div class="modal-box">
       <i class="fa-solid fa-user-shield icon-head"></i>
       <h2>Dashboard Admin</h2>
-      <p>Kelola profil dan isi berkas/media database.</p>
+      <p>Kelola profil, media, dan pantau statistik aktivitas.</p>
+
+      <!-- ANALYTICS SECTION -->
+      <div class="admin-section">
+        <h3><i class="fa-solid fa-chart-line"></i> Analisis Penggunaan Aplikasi</h3>
+        
+        <div class="analytics-tabs">
+          <button class="analytics-tab-btn active" id="tabPapahBtn" onclick="switchAnalyticsUser('papah')">Papah 💙</button>
+          <button class="analytics-tab-btn" id="tabMamahBtn" onclick="switchAnalyticsUser('mamah')">Mamah ❤️</button>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="stat-card">
+            <div class="val" id="statToday">0x</div>
+            <div class="lbl">Dibuka Hari Ini</div>
+          </div>
+          <div class="stat-card">
+            <div class="val" id="statWeek">0x</div>
+            <div class="lbl">Dibuka Minggu Ini</div>
+          </div>
+          <div class="stat-card">
+            <div class="val" id="statMonth">0x</div>
+            <div class="lbl">Dibuka Bulan Ini</div>
+          </div>
+          <div class="stat-card">
+            <div class="val" id="statAvgActive">0 mnt</div>
+            <div class="lbl">Rata2 Aktif/Hari</div>
+          </div>
+        </div>
+
+        <p style="font-size:11px; color:var(--text-sub); margin-bottom:6px;">Jam-jam Paling Sering Membuka Aplikasi (24 Jam WITA):</p>
+        <div class="chart-container">
+          <canvas id="hourlyChart"></canvas>
+        </div>
+      </div>
 
       <div class="admin-section">
         <h3><i class="fa-solid fa-image"></i> Kelola Foto Profil</h3>
@@ -662,6 +752,12 @@
     let userAvatars = { papah: null, mamah: null };
     let allMessages = [];
 
+    // SESSION TRACKING VARS
+    let currentSessionRef = null;
+    let sessionStartTime = null;
+    let analyticsSelectedUser = 'papah';
+    let hourlyChartInstance = null;
+
     // PEREKAM SUARA
     let mediaRecorder = null;
     let audioChunks = [];
@@ -689,11 +785,43 @@
       document.getElementById('lockScreen').style.display = 'none';
       document.getElementById('partnerName').innerText = partnerUser === 'mamah' ? 'Mamah ❤️' : 'Papah 💙';
 
+      recordAppSessionStart();
       listenAvatars();
       initPresence();
       listenMessages();
       listenPartnerPresence();
       calculateStorageUsage();
+    }
+
+    // CATAT AWAL SESI PENGGUNAMENGGUNAKAN APLIKASI
+    function recordAppSessionStart() {
+      if (!currentUser || currentUser === 'admin') return;
+      
+      sessionStartTime = Date.now();
+      const sessionRef = db.ref(`analytics/sessions/${currentUser}`).push();
+      currentSessionRef = sessionRef;
+
+      sessionRef.set({
+        startTime: firebase.database.ServerValue.TIMESTAMP,
+        durationSeconds: 0
+      });
+
+      // Update durasi saat halaman ditutup/dipindah
+      window.addEventListener('beforeunload', recordAppSessionEnd);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          recordAppSessionEnd();
+        }
+      });
+    }
+
+    function recordAppSessionEnd() {
+      if (currentSessionRef && sessionStartTime) {
+        const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
+        currentSessionRef.update({
+          durationSeconds: duration
+        });
+      }
     }
 
     function listenAvatars() {
@@ -1117,16 +1245,114 @@
       document.getElementById('storageProgress').style.width = `${pct}%`;
     }
 
-    // DASHBOARD ADMIN
+    // DASHBOARD ADMIN & ANALYTICS
     function openAdminDashboard() {
       document.getElementById('lockScreen').style.display = 'none';
       document.getElementById('adminModal').style.display = 'flex';
       listenAvatars();
       loadAdminMediaList();
+      loadAnalyticsData();
     }
 
     function closeAdminModal() {
       location.reload();
+    }
+
+    function switchAnalyticsUser(user) {
+      analyticsSelectedUser = user;
+      document.getElementById('tabPapahBtn').classList.toggle('active', user === 'papah');
+      document.getElementById('tabMamahBtn').classList.toggle('active', user === 'mamah');
+      loadAnalyticsData();
+    }
+
+    function loadAnalyticsData() {
+      db.ref(`analytics/sessions/${analyticsSelectedUser}`).once('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        const sessions = Object.values(data);
+
+        const now = new Date();
+        const todayStr = now.toDateString();
+        
+        // Start of Week & Month
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setHours(0,0,0,0);
+
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        let todayCount = 0;
+        let weekCount = 0;
+        let monthCount = 0;
+
+        let totalDuration = 0;
+        const daysActiveSet = new Set();
+        const hourlyCounts = new Array(24).fill(0);
+
+        sessions.forEach(sess => {
+          if (!sess.startTime) return;
+          const sDate = new Date(sess.startTime);
+
+          if (sDate.toDateString() === todayStr) todayCount++;
+          if (sDate >= startOfWeek) weekCount++;
+          if (sDate >= startOfMonth) monthCount++;
+
+          const dur = sess.durationSeconds || 0;
+          totalDuration += dur;
+          daysActiveSet.add(sDate.toDateString());
+
+          const hour = sDate.getHours();
+          hourlyCounts[hour]++;
+        });
+
+        // Update Stat Cards
+        document.getElementById('statToday').innerText = `${todayCount}x`;
+        document.getElementById('statWeek').innerText = `${weekCount}x`;
+        document.getElementById('statMonth').innerText = `${monthCount}x`;
+
+        const totalDays = daysActiveSet.size || 1;
+        const avgMinutes = Math.round((totalDuration / 60) / totalDays);
+        document.getElementById('statAvgActive').innerText = avgMinutes > 60 ? `${(avgMinutes/60).toFixed(1)} jam` : `${avgMinutes} mnt`;
+
+        // Render Diagram Batang Jam
+        renderHourlyChart(hourlyCounts);
+      });
+    }
+
+    function renderHourlyChart(hourlyCounts) {
+      const ctx = document.getElementById('hourlyChart').getContext('2d');
+      const labels = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
+
+      if (hourlyChartInstance) {
+        hourlyChartInstance.destroy();
+      }
+
+      hourlyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Frekuensi Buka',
+            data: hourlyCounts,
+            backgroundColor: '#00a884',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              ticks: { color: '#8696a0', font: { size: 9 } },
+              grid: { display: false }
+            },
+            y: {
+              ticks: { color: '#8696a0', font: { size: 9 }, stepSize: 1 },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            }
+          }
+        }
+      });
     }
 
     function updateAdminAvatarUI() {
