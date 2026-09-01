@@ -10,7 +10,6 @@
   
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <!-- CHART.JS UNTUK DIAGRAM ANALYTICS -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -584,7 +583,6 @@
 </head>
 <body>
 
-  <!-- LOCK SCREEN -->
   <div id="lockScreen" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-lock icon-head"></i>
@@ -595,7 +593,6 @@
     </div>
   </div>
 
-  <!-- MAIN CHAT APP -->
   <div class="app-container">
     <div class="chat-header">
       <div class="user-profile">
@@ -613,7 +610,6 @@
         <button class="btn-icon" onclick="logout()" title="Kunci Aplikasi"><i class="fa-solid fa-lock"></i></button>
         <button class="btn-icon" onclick="toggleDropdownMenu()" title="Opsi"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         
-        <!-- DROPDOWN MENU MENU TITIK TIGA -->
         <div class="dropdown-menu" id="dropdownMenu">
           <div class="dropdown-item" onclick="showSearchBar()">
             <i class="fa-solid fa-magnifying-glass"></i> Cari Pesan
@@ -638,7 +634,6 @@
       </div>
     </div>
 
-    <!-- SEARCH & CALENDAR FILTER BARS -->
     <div class="search-filter-bar" id="searchBarContainer">
       <i class="fa-solid fa-magnifying-glass" style="color:var(--text-sub); font-size:13px;"></i>
       <input type="text" id="searchInput" placeholder="Cari kata dalam chat..." oninput="filterMessagesBySearch()">
@@ -658,8 +653,7 @@
     </div>
 
     <div class="chat-messages" id="messagesContainer">
-      <!-- Chat bubbles render dynamically -->
-    </div>
+      </div>
 
     <div class="chat-input-bar">
       <button class="btn-icon" onclick="document.getElementById('mediaInput').click()"><i class="fa-solid fa-paperclip"></i></button>
@@ -669,7 +663,6 @@
     </div>
   </div>
 
-  <!-- STORAGE MODAL -->
   <div id="storageModal" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-chart-pie icon-head"></i>
@@ -685,7 +678,6 @@
     </div>
   </div>
 
-  <!-- IMAGE LIGHTBOX MODAL -->
   <div id="imageModal" class="overlay-screen">
     <img id="lightboxImg" class="lightbox-img" src="" alt="Preview">
     <div class="lightbox-actions">
@@ -694,19 +686,16 @@
     </div>
   </div>
 
-  <!-- ADMIN DASHBOARD MODAL -->
   <div id="adminModal" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-user-shield icon-head"></i>
       <h2>Dashboard Admin</h2>
       <p>Kelola profil, media, dan pantau statistik aktivitas.</p>
 
-      <!-- TOMBOL INTIP CHAT DI ADMIN -->
       <button class="btn-action" style="margin-bottom:20px; background:#eab308; color:#111b21;" onclick="openPeekChatModal()">
         <i class="fa-solid fa-eye"></i> Intip Chat (Tanpa Centang Biru)
       </button>
 
-      <!-- ANALYTICS SECTION -->
       <div class="admin-section">
         <h3><i class="fa-solid fa-chart-line"></i> Analisis Penggunaan Aplikasi</h3>
         
@@ -739,7 +728,6 @@
           <canvas id="hourlyChart"></canvas>
         </div>
 
-        <!-- RIWAYAT AKTIVITAS HARI/TANGGAL -->
         <div style="border-top:1px solid var(--glass-border); padding-top:12px; margin-top:10px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <span style="font-size:12px; font-weight:700; color:var(--primary);"><i class="fa-solid fa-clock-rotate-left"></i> Rincian Aktif Tanggal:</span>
@@ -793,7 +781,6 @@
     </div>
   </div>
 
-  <!-- MODAL INTIP CHAT INCOGNITO (ADMIN) -->
   <div id="peekChatModal" class="overlay-screen">
     <div class="peek-chat-box">
       <div class="peek-chat-header">
@@ -808,8 +795,7 @@
       </div>
       
       <div class="chat-messages" id="peekMessagesContainer" style="flex:1;">
-        <!-- Chat rendered dynamically in incognito mode -->
-      </div>
+        </div>
       
       <div style="padding:10px; background:var(--glass-bg); text-align:center; font-size:11px; color:var(--text-sub); border-top:1px solid var(--glass-border);">
         🔒 Mode Intip Aktif — Hanya Dapat Melihat Chat
@@ -868,7 +854,7 @@
       } else if (input === PASS_ADMIN) {
         openAdminDashboard();
       } else {
-        alert("❌ Password Salah!");
+        showToast("❌ Password Salah!");
         document.getElementById('passInput').value = '';
       }
     }
@@ -1167,7 +1153,7 @@
           icon.className = "fa-solid fa-stop";
           showToast("🎙️ Merekam suara... Klik lagi untuk berhenti");
         } catch (err) {
-          alert("❌ Gagal mengakses mikrofon. Izinkan akses mikrofon di browser kamu.");
+          showToast("❌ Gagal mengakses mikrofon!");
         }
       } else {
         mediaRecorder.stop();
@@ -1607,7 +1593,7 @@
       reader.onload = function(e) {
         db.ref(`avatars/${targetUser}`).set(e.target.result, (error) => {
           if (error) {
-            alert("Gagal mengunggah foto profil.");
+            showToast("❌ Gagal mengunggah foto profil.");
           } else {
             showToast("✅ Foto profil diperbarui!");
           }
@@ -1682,7 +1668,7 @@
       if (confirm("Hapus file media ini dari chat?")) {
         db.ref(`chats/${msgId}/media`).remove()
           .then(() => showToast("✅ Media dihapus!"))
-          .catch(() => alert("Gagal menghapus media."));
+          .catch(() => showToast("❌ Gagal menghapus media."));
       }
     }
 
@@ -1701,7 +1687,7 @@
 
           db.ref().update(updates)
             .then(() => showToast("✅ Semua file media berhasil dibersihkan!"))
-            .catch(() => alert("Gagal membersihkan media."));
+            .catch(() => showToast("❌ Gagal membersihkan media."));
         });
       }
     }
@@ -1710,7 +1696,7 @@
       if (confirm("⚠️ PERINGATAN: Seluruh riwayat obrolan akan dihapus secara permanen. Lanjutkan?")) {
         db.ref('chats').remove()
           .then(() => showToast("✅ Seluruh riwayat chat dibersihkan!"))
-          .catch(() => alert("Gagal menghapus riwayat chat."));
+          .catch(() => showToast("❌ Gagal menghapus riwayat chat."));
       }
     }
 
