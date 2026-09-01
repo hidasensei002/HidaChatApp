@@ -5,24 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Papah & Mamah - Private Workspace</title>
   
-  <!-- Fonts & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Firebase SDK (v8 Compat) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <style>
     :root {
-      --bg-dark: #0b141a; /* Tema Gelap Khas WhatsApp */
+      --bg-dark: #0b141a;
       --primary: #00a884;
       --accent: #00a884;
       --glass-bg: #111b21;
       --glass-border: rgba(255, 255, 255, 0.08);
       --glass-card: #202c33;
-      --msg-sent: #005c4b; /* Hijau WA Sent */
-      --msg-received: #202c33; /* Abu WA Received */
+      --msg-sent: #005c4b;
+      --msg-received: #202c33;
       --text-main: #e9edef;
       --text-sub: #8696a0;
     }
@@ -123,7 +121,7 @@
       position: relative;
     }
 
-    /* HEADER WA STYLE */
+    /* HEADER */
     .chat-header {
       padding: 10px 16px;
       background: var(--glass-bg);
@@ -163,7 +161,7 @@
     }
     .btn-icon:hover { background: rgba(255,255,255,0.05); }
 
-    /* MESSAGES AREA WA STYLE WITH PATTERN */
+    /* MESSAGES AREA */
     .chat-messages {
       flex: 1;
       padding: 12px 16px;
@@ -186,7 +184,6 @@
     .message-row.sent { align-self: flex-end; align-items: flex-end; }
     .message-row.received { align-self: flex-start; align-items: flex-start; }
 
-    /* WA BUBBLE STYLE + TAILS */
     .bubble {
       padding: 6px 10px 8px 10px;
       border-radius: 8px;
@@ -200,16 +197,15 @@
     .sent .bubble {
       background: var(--msg-sent);
       color: #e9edef;
-      border-top-right-radius: 0px; /* Tail WA */
+      border-top-right-radius: 0px;
     }
 
     .received .bubble {
       background: var(--msg-received);
       color: #e9edef;
-      border-top-left-radius: 0px; /* Tail WA */
+      border-top-left-radius: 0px;
     }
 
-    /* MEDIA PREVIEW WA STYLE */
     .media-container {
       margin-top: 2px;
       margin-bottom: 2px;
@@ -234,7 +230,6 @@
       display: block;
     }
 
-    /* TIMESTAMP & TICKS INLINE WA STYLE */
     .msg-meta {
       display: inline-flex;
       align-items: center;
@@ -251,7 +246,7 @@
     .tick { font-size: 11px; color: rgba(255,255,255,0.4); }
     .tick.read { color: #53bdeb; }
 
-    /* INPUT BAR WA STYLE */
+    /* INPUT BAR */
     .chat-input-bar {
       padding: 8px 12px;
       background: var(--glass-bg);
@@ -301,6 +296,25 @@
     }
     .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
 
+    /* IMAGE LIGHTBOX MODAL */
+    #imageModal {
+      display: none;
+      flex-direction: column;
+      z-index: 100000;
+      background: rgba(0, 0, 0, 0.9);
+    }
+    .lightbox-img {
+      max-width: 90%;
+      max-height: 70vh;
+      object-fit: contain;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .lightbox-actions {
+      display: flex;
+      gap: 12px;
+    }
+
     #toast {
       position: fixed;
       bottom: 75px; left: 50%;
@@ -319,7 +333,6 @@
 </head>
 <body>
 
-  <!-- STEP 1: LOCK SCREEN -->
   <div id="lockScreen" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-lock icon-head"></i>
@@ -330,7 +343,6 @@
     </div>
   </div>
 
-  <!-- STEP 2: ROLE SELECTION -->
   <div id="roleScreen" class="overlay-screen" style="display:none;">
     <div class="modal-box">
       <i class="fa-solid fa-users-rectangle icon-head"></i>
@@ -349,7 +361,6 @@
     </div>
   </div>
 
-  <!-- MAIN CHAT APP -->
   <div class="app-container">
     <div class="chat-header">
       <div class="user-profile">
@@ -369,8 +380,7 @@
     </div>
 
     <div class="chat-messages" id="messagesContainer">
-      <!-- Chat bubbles render dynamically -->
-    </div>
+      </div>
 
     <div class="chat-input-bar">
       <button class="btn-icon" onclick="document.getElementById('mediaInput').click()"><i class="fa-solid fa-paperclip"></i></button>
@@ -380,7 +390,6 @@
     </div>
   </div>
 
-  <!-- STORAGE MODAL -->
   <div id="storageModal" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-chart-pie icon-head"></i>
@@ -393,6 +402,14 @@
         Terpakai: <b id="storageUsedText" style="color:#fff;">0 MB</b> / 1.024 MB
       </div>
       <button class="btn-action" onclick="closeStorageModal()">Tutup</button>
+    </div>
+  </div>
+
+  <div id="imageModal" class="overlay-screen">
+    <img id="lightboxImg" class="lightbox-img" src="" alt="Preview">
+    <div class="lightbox-actions">
+      <button class="btn-action" id="btnDownloadImg" style="width:auto; padding: 10px 20px;"><i class="fa-solid fa-download"></i> Unduh</button>
+      <button class="btn-action" onclick="closeImageModal()" style="width:auto; padding: 10px 20px; background:#374151; color:#fff;">Tutup</button>
     </div>
   </div>
 
@@ -511,7 +528,6 @@
         const data = snapshot.val();
         if (!data) return;
 
-        // Sort pesan berdasarkan timestamp
         const sortedMsgs = Object.values(data).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
         sortedMsgs.forEach((msg) => {
@@ -535,7 +551,8 @@
           let mediaHTML = '';
           if (msg.media) {
             if (msg.media.type && msg.media.type.startsWith('image/')) {
-              mediaHTML = `<div class="media-container"><img src="${msg.media.url}" class="media-preview" onclick="downloadBase64('${msg.media.url}', '${msg.media.name}')"></div>`;
+              // Buka Modal Image Lightbox saat foto diklik
+              mediaHTML = `<div class="media-container"><img src="${msg.media.url}" class="media-preview" onclick="openImageModal('${msg.media.url}', '${msg.media.name}')"></div>`;
             } else if (msg.media.type && msg.media.type.startsWith('video/')) {
               mediaHTML = `<div class="media-container"><video src="${msg.media.url}" controls class="media-video"></video></div>`;
             } else {
@@ -564,8 +581,9 @@
       const file = event.target.files[0];
       if (!file) return;
 
-      if (file.size > 2 * 1024 * 1024) {
-        showToast("⚠️ Ukuran file maksimal 2MB!");
+      // BATAS DINAIKKAN MENJADI 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        showToast("⚠️ Ukuran file maksimal 5MB!");
         return;
       }
 
@@ -586,6 +604,20 @@
       };
 
       reader.readAsDataURL(file);
+    }
+
+    function openImageModal(url, filename) {
+      const modal = document.getElementById('imageModal');
+      const img = document.getElementById('lightboxImg');
+      const btnDownload = document.getElementById('btnDownloadImg');
+      
+      img.src = url;
+      btnDownload.onclick = () => downloadBase64(url, filename);
+      modal.style.display = 'flex';
+    }
+
+    function closeImageModal() {
+      document.getElementById('imageModal').style.display = 'none';
     }
 
     function downloadBase64(url, filename) {
