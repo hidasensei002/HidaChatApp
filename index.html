@@ -514,6 +514,28 @@
       position: relative;
     }
 
+    /* TIMELINE STYLES */
+    .timeline-container {
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .timeline-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #111b21;
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+    .timeline-time { color: var(--text-main); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .timeline-duration { color: var(--primary); font-weight: 700; background: rgba(0,168,132,0.1); padding: 2px 8px; border-radius: 12px; }
+
     #toast {
       position: fixed;
       bottom: 75px; left: 50%;
@@ -678,9 +700,22 @@
         </div>
 
         <p style="font-size:11px; color:var(--text-sub); margin-bottom:6px;">Jam-jam Paling Sering Membuka Aplikasi (24 Jam WITA):</p>
-        <div class="chart-container">
+        <div class="chart-container" style="margin-bottom:14px;">
           <canvas id="hourlyChart"></canvas>
         </div>
+
+        <!-- RIWAYAT AKTIVITAS HARI/TANGGAL -->
+        <div style="border-top:1px solid var(--glass-border); padding-top:12px; margin-top:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:12px; font-weight:700; color:var(--primary);"><i class="fa-solid fa-clock-rotate-left"></i> Rincian Aktif Tanggal:</span>
+            <input type="date" id="analyticsDatePicker" style="background:#111b21; border:1px solid var(--glass-border); color:#fff; padding:4px 8px; border-radius:6px; font-size:11px; outline:none;" onchange="loadTimelineData()">
+          </div>
+
+          <div class="timeline-container" id="timelineList">
+            <div style="font-size:11px; color:var(--text-sub); text-align:center; padding:10px;">Memuat riwayat...</div>
+          </div>
+        </div>
+
       </div>
 
       <div class="admin-section">
@@ -757,6 +792,7 @@
     let sessionStartTime = null;
     let analyticsSelectedUser = 'papah';
     let hourlyChartInstance = null;
+    let cachedUserSessions = [];
 
     // PEREKAM SUARA
     let mediaRecorder = null;
@@ -1249,6 +1285,14 @@
     function openAdminDashboard() {
       document.getElementById('lockScreen').style.display = 'none';
       document.getElementById('adminModal').style.display = 'flex';
+      
+      // Set default tanggal hari ini di date picker analytics
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById('analyticsDatePicker').value = `${yyyy}-${mm}-${dd}`;
+
       listenAvatars();
       loadAdminMediaList();
       loadAnalyticsData();
@@ -1268,7 +1312,7 @@
     function loadAnalyticsData() {
       db.ref(`analytics/sessions/${analyticsSelectedUser}`).once('value', (snapshot) => {
         const data = snapshot.val() || {};
-        const sessions = Object.values(data);
+        cachedUserSessions = Object.values(data);
 
         const now = new Date();
         const todayStr = now.toDateString();
@@ -1288,7 +1332,7 @@
         const daysActiveSet = new Set();
         const hourlyCounts = new Array(24).fill(0);
 
-        sessions.forEach(sess => {
+        cachedUserSessions.forEach(sess => {
           if (!sess.startTime) return;
           const sDate = new Date(sess.startTime);
 
@@ -1315,6 +1359,64 @@
 
         // Render Diagram Batang Jam
         renderHourlyChart(hourlyCounts);
+
+        // Render Rincian Timeline Berdasarkan Tanggal
+        loadTimelineData();
+      });
+    }
+
+    function loadTimelineData() {
+      const selectedDateStr = document.getElementById('analyticsDatePicker').value;
+      const container = document.getElementById('timelineList');
+      container.innerHTML = '';
+
+      if (!selectedDateStr) {
+        container.innerHTML = '<div style="font-size:11px; color:var(--text-sub); text-align:center; padding:10px;">Silakan pilih tanggal.</div>';
+        return;
+      }
+
+      const filteredSessions = cachedUserSessions.filter(sess => {
+        if (!sess.startTime) return false;
+        const sDate = new Date(sess.startTime);
+        const yyyy = sDate.getFullYear();
+        const mm = String(sDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(sDate.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}` === selectedDateStr;
+      }).sort((a, b) => (b.startTime || 0) - (a.startTime || 0));
+
+      if (filteredSessions.length === 0) {
+        container.innerHTML = '<div style="font-size:11px; color:var(--text-sub); text-align:center; padding:10px;">Tidak ada aktivitas pada tanggal ini.</div>';
+        return;
+      }
+
+      filteredSessions.forEach(sess => {
+        const sDate = new Date(sess.startTime);
+        const hours = String(sDate.getHours()).padStart(2, '0');
+        const minutes = String(sDate.getMinutes()).padStart(2, '0');
+        const timeFormatted = `${hours}:${minutes} WITA`;
+
+        const durSec = sess.durationSeconds || 0;
+        let durFormatted = '';
+        if (durSec < 60) {
+          durFormatted = `${durSec} dtk`;
+        } else {
+          const m = Math.floor(durSec / 60);
+          const s = durSec % 60;
+          durFormatted = s > 0 ? `${m} mnt ${s} dtk` : `${m} mnt`;
+        }
+
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+        item.innerHTML = `
+          <div class="timeline-time">
+            <i class="fa-solid fa-mobile-screen-button" style="color:var(--primary);"></i>
+            Dibuka jam ${timeFormatted}
+          </div>
+          <div class="timeline-duration">
+            Aktif: ${durFormatted}
+          </div>
+        `;
+        container.appendChild(item);
       });
     }
 
