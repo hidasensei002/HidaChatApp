@@ -23,6 +23,7 @@
       --msg-received: #202c33;
       --text-main: #e9edef;
       --text-sub: #8696a0;
+      --danger: #ef4444;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -39,7 +40,7 @@
       overflow: hidden;
     }
 
-    /* LOCK & ROLE SCREEN */
+    /* LOCK SCREEN */
     .overlay-screen {
       position: fixed;
       inset: 0;
@@ -58,9 +59,11 @@
       padding: 32px 24px;
       border-radius: 20px;
       width: 100%;
-      max-width: 380px;
+      max-width: 420px;
       text-align: center;
       box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .modal-box i.icon-head { font-size: 42px; color: var(--accent); margin-bottom: 16px; }
@@ -93,19 +96,10 @@
       margin-top: 8px;
     }
 
-    .role-grid { display: flex; gap: 12px; margin-top: 10px; }
-    .btn-role {
-      flex: 1;
-      padding: 16px;
-      background: #111b21;
-      border: 1px solid var(--glass-border);
-      border-radius: 14px;
+    .btn-danger {
+      background: var(--danger);
       color: #fff;
-      cursor: pointer;
-      transition: 0.2s;
     }
-    .btn-role:hover { background: var(--primary); color: #111b21; }
-    .btn-role i { font-size: 24px; margin-bottom: 8px; display: block; }
 
     /* CHAT CONTAINER */
     .app-container {
@@ -140,6 +134,12 @@
       background: #6b7c85;
       display: flex; align-items: center; justify-content: center;
       font-size: 18px; color: #fff;
+      overflow: hidden;
+      object-fit: cover;
+    }
+    .avatar img {
+      width: 100%; height: 100%;
+      object-fit: cover;
     }
 
     .user-info h4 { font-size: 15px; font-weight: 600; color: #e9edef; }
@@ -315,6 +315,62 @@
       gap: 12px;
     }
 
+    /* ADMIN DASHBOARD MODAL STYLES */
+    #adminModal { display: none; z-index: 10000; }
+    .admin-section {
+      text-align: left;
+      margin-bottom: 20px;
+      padding: 14px;
+      background: rgba(17, 27, 33, 0.7);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+    }
+    .admin-section h3 {
+      font-size: 14px;
+      color: var(--primary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .admin-avatar-grid {
+      display: flex;
+      gap: 12px;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .admin-avatar-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .admin-avatar-card .avatar { width: 54px; height: 54px; font-size: 24px; }
+    .media-list-container {
+      max-height: 160px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .media-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      background: #111b21;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+    .media-item-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+      color: #e9edef;
+    }
+
     #toast {
       position: fixed;
       bottom: 75px; left: 50%;
@@ -333,34 +389,18 @@
 </head>
 <body>
 
+  <!-- STEP 1: LOCK SCREEN -->
   <div id="lockScreen" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-lock icon-head"></i>
       <h2>Private Workspace</h2>
-      <p>Masukkan kata sandi akses ruang chat privat.</p>
+      <p>Masukkan kata sandi akses ruang chat atau admin.</p>
       <input type="password" id="passInput" placeholder="Password..." onkeydown="if(event.key==='Enter') verifyPassword()">
-      <button class="btn-action" onclick="verifyPassword()">Masuk Ruangan <i class="fa-solid fa-key"></i></button>
+      <button class="btn-action" onclick="verifyPassword()">Masuk <i class="fa-solid fa-key"></i></button>
     </div>
   </div>
 
-  <div id="roleScreen" class="overlay-screen" style="display:none;">
-    <div class="modal-box">
-      <i class="fa-solid fa-users-rectangle icon-head"></i>
-      <h2>Pilih Identitas</h2>
-      <p>Kamu mengakses ruang chat ini sebagai siapa?</p>
-      <div class="role-grid">
-        <button class="btn-role" onclick="selectRole('papah')">
-          <i class="fa-solid fa-user-tie"></i>
-          <b>Papah</b>
-        </button>
-        <button class="btn-role" onclick="selectRole('mamah')">
-          <i class="fa-solid fa-user-nurse"></i>
-          <b>Mamah</b>
-        </button>
-      </div>
-    </div>
-  </div>
-
+  <!-- MAIN CHAT APP -->
   <div class="app-container">
     <div class="chat-header">
       <div class="user-profile">
@@ -380,7 +420,8 @@
     </div>
 
     <div class="chat-messages" id="messagesContainer">
-      </div>
+      <!-- Chat bubbles render dynamically -->
+    </div>
 
     <div class="chat-input-bar">
       <button class="btn-icon" onclick="document.getElementById('mediaInput').click()"><i class="fa-solid fa-paperclip"></i></button>
@@ -390,6 +431,7 @@
     </div>
   </div>
 
+  <!-- STORAGE MODAL -->
   <div id="storageModal" class="overlay-screen">
     <div class="modal-box">
       <i class="fa-solid fa-chart-pie icon-head"></i>
@@ -405,11 +447,62 @@
     </div>
   </div>
 
+  <!-- IMAGE LIGHTBOX MODAL -->
   <div id="imageModal" class="overlay-screen">
     <img id="lightboxImg" class="lightbox-img" src="" alt="Preview">
     <div class="lightbox-actions">
       <button class="btn-action" id="btnDownloadImg" style="width:auto; padding: 10px 20px;"><i class="fa-solid fa-download"></i> Unduh</button>
       <button class="btn-action" onclick="closeImageModal()" style="width:auto; padding: 10px 20px; background:#374151; color:#fff;">Tutup</button>
+    </div>
+  </div>
+
+  <!-- ADMIN DASHBOARD MODAL -->
+  <div id="adminModal" class="overlay-screen">
+    <div class="modal-box">
+      <i class="fa-solid fa-user-shield icon-head"></i>
+      <h2>Dashboard Admin</h2>
+      <p>Kelola profil dan penggunaan memori database.</p>
+
+      <!-- Ganti Foto Profil -->
+      <div class="admin-section">
+        <h3><i class="fa-solid fa-image"></i> Kelola Foto Profil</h3>
+        <div class="admin-avatar-grid">
+          <div class="admin-avatar-card">
+            <div class="avatar" id="adminPapahAvatar"><i class="fa-solid fa-user-tie"></i></div>
+            <span style="font-size:12px;">Papah</span>
+            <button class="btn-action" style="padding:4px 8px; font-size:11px;" onclick="document.getElementById('papahAvatarInput').click()">Ubah</button>
+            <input type="file" id="papahAvatarInput" style="display:none;" accept="image/*" onchange="uploadAvatar('papah', event)">
+          </div>
+          <div class="admin-avatar-card">
+            <div class="avatar" id="adminMamahAvatar"><i class="fa-solid fa-user-nurse"></i></div>
+            <span style="font-size:12px;">Mamah</span>
+            <button class="btn-action" style="padding:4px 8px; font-size:11px;" onclick="document.getElementById('mamahAvatarInput').click()">Ubah</button>
+            <input type="file" id="mamahAvatarInput" style="display:none;" accept="image/*" onchange="uploadAvatar('mamah', event)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Bersihkan Media -->
+      <div class="admin-section">
+        <h3><i class="fa-solid fa-trash-can"></i> Bersihkan Media Chat</h3>
+        <p style="font-size:11px; margin-bottom:8px;">Hapus berkas foto/video besar untuk mengosongkan memori.</p>
+        <div class="media-list-container" id="adminMediaList">
+          <div style="font-size:12px; color:var(--text-sub); text-align:center;">Memuat daftar berkas...</div>
+        </div>
+        <button class="btn-action btn-danger" style="margin-top:10px; font-size:12px;" onclick="deleteAllMedia()">
+          <i class="fa-solid fa-dumpster"></i> Hapus Semua File Media
+        </button>
+      </div>
+
+      <!-- Reset Database -->
+      <div class="admin-section">
+        <h3><i class="fa-solid fa-triangle-exclamation"></i> Bersihkan Semua Chat</h3>
+        <button class="btn-action btn-danger" style="font-size:12px;" onclick="deleteAllChats()">
+          <i class="fa-solid fa-broom"></i> Hapus Seluruh Riwayat Chat
+        </button>
+      </div>
+
+      <button class="btn-action" onclick="closeAdminModal()" style="background:#374151; color:#fff;">Keluar Admin</button>
     </div>
   </div>
 
@@ -432,33 +525,67 @@
     }
     const db = firebase.database();
 
-    const PASSWORD_AKSES = "maubuka";
-    let currentUser = null;
+    // PASSWORD AKSES HAK TINGKAT
+    const PASS_PAPAH = "papahchat";
+    const PASS_MAMAH = "mamahchat";
+    const PASS_ADMIN = "adminchat";
+
+    let currentUser = null; // 'papah', 'mamah', atau 'admin'
     let partnerUser = null;
     let totalStorageBytes = 0;
+    let userAvatars = { papah: null, mamah: null };
 
+    // VERIFIKASI PASSWORD LOGIN
     function verifyPassword() {
-      const input = document.getElementById('passInput').value;
-      if (input === PASSWORD_AKSES) {
-        document.getElementById('lockScreen').style.display = 'none';
-        document.getElementById('roleScreen').style.display = 'flex';
+      const input = document.getElementById('passInput').value.trim();
+      
+      if (input === PASS_PAPAH) {
+        startChatSession('papah');
+      } else if (input === PASS_MAMAH) {
+        startChatSession('mamah');
+      } else if (input === PASS_ADMIN) {
+        openAdminDashboard();
       } else {
-        alert("❌ Password Salah!");
+        alert("❌ Password Salah!\nGunakan password papahchat, mamahchat, atau adminchat.");
       }
     }
 
-    function selectRole(role) {
+    // MULAI SESI CHAT PASANGAN
+    function startChatSession(role) {
       currentUser = role;
       partnerUser = role === 'papah' ? 'mamah' : 'papah';
 
-      document.getElementById('roleScreen').style.display = 'none';
+      document.getElementById('lockScreen').style.display = 'none';
       document.getElementById('partnerName').innerText = partnerUser === 'mamah' ? 'Mamah ❤️' : 'Papah 💙';
-      document.getElementById('partnerAvatar').innerHTML = partnerUser === 'mamah' ? '<i class="fa-solid fa-user-nurse"></i>' : '<i class="fa-solid fa-user-tie"></i>';
 
+      listenAvatars();
       initPresence();
       listenMessages();
       listenPartnerPresence();
       calculateStorageUsage();
+    }
+
+    // LISTENER AVATAR REALTIME
+    function listenAvatars() {
+      db.ref('avatars').on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        userAvatars = data;
+
+        // Render Avatar Partner di Header
+        const partnerAv = data[partnerUser];
+        const partnerAvatarElem = document.getElementById('partnerAvatar');
+        
+        if (partnerAv) {
+          partnerAvatarElem.innerHTML = `<img src="${partnerAv}">`;
+        } else {
+          partnerAvatarElem.innerHTML = partnerUser === 'mamah' ? '<i class="fa-solid fa-user-nurse"></i>' : '<i class="fa-solid fa-user-tie"></i>';
+        }
+
+        // Update Avatar Admin Modal jika terbuka
+        if (document.getElementById('adminModal').style.display === 'flex') {
+          updateAdminAvatarUI();
+        }
+      });
     }
 
     function initPresence() {
@@ -551,7 +678,6 @@
           let mediaHTML = '';
           if (msg.media) {
             if (msg.media.type && msg.media.type.startsWith('image/')) {
-              // Buka Modal Image Lightbox saat foto diklik
               mediaHTML = `<div class="media-container"><img src="${msg.media.url}" class="media-preview" onclick="openImageModal('${msg.media.url}', '${msg.media.name}')"></div>`;
             } else if (msg.media.type && msg.media.type.startsWith('video/')) {
               mediaHTML = `<div class="media-container"><video src="${msg.media.url}" controls class="media-video"></video></div>`;
@@ -581,7 +707,6 @@
       const file = event.target.files[0];
       if (!file) return;
 
-      // BATAS DINAIKKAN MENJADI 5MB
       if (file.size > 5 * 1024 * 1024) {
         showToast("⚠️ Ukuran file maksimal 5MB!");
         return;
@@ -649,6 +774,127 @@
 
       document.getElementById('storageUsedText').innerText = `${mbUsed} MB`;
       document.getElementById('storageProgress').style.width = `${pct}%`;
+    }
+
+    // =========================================================
+    // FITUR DASHBOARD ADMIN
+    // =========================================================
+    function openAdminDashboard() {
+      document.getElementById('lockScreen').style.display = 'none';
+      document.getElementById('adminModal').style.display = 'flex';
+      listenAvatars();
+      loadAdminMediaList();
+    }
+
+    function closeAdminModal() {
+      location.reload();
+    }
+
+    function updateAdminAvatarUI() {
+      const pAv = userAvatars.papah;
+      const mAv = userAvatars.mamah;
+
+      document.getElementById('adminPapahAvatar').innerHTML = pAv ? `<img src="${pAv}">` : '<i class="fa-solid fa-user-tie"></i>';
+      document.getElementById('adminMamahAvatar').innerHTML = mAv ? `<img src="${mAv}">` : '<i class="fa-solid fa-user-nurse"></i>';
+    }
+
+    function uploadAvatar(targetUser, event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (file.size > 1 * 1024 * 1024) {
+        showToast("⚠️ Ukuran foto profil maksimal 1MB!");
+        return;
+      }
+
+      showToast("⏳ Mengunggah foto profil...");
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        db.ref(`avatars/${targetUser}`).set(e.target.result, (error) => {
+          if (error) {
+            alert("Gagal mengunggah foto profil.");
+          } else {
+            showToast("✅ Foto profil diperbarui!");
+          }
+        });
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    function loadAdminMediaList() {
+      const container = document.getElementById('adminMediaList');
+      
+      db.ref('chats').on('value', (snapshot) => {
+        container.innerHTML = '';
+        const data = snapshot.val();
+        if (!data) {
+          container.innerHTML = '<div style="font-size:12px; color:var(--text-sub); text-align:center;">Tidak ada file media.</div>';
+          return;
+        }
+
+        let mediaFound = false;
+
+        Object.values(data).forEach((msg) => {
+          if (msg.media) {
+            mediaFound = true;
+            const sizeMB = (msg.media.size / (1024 * 1024)).toFixed(2);
+            const row = document.createElement('div');
+            row.className = 'media-item-row';
+            row.innerHTML = `
+              <div class="media-item-name" title="${escapeHtml(msg.media.name)}">
+                <i class="fa-solid ${msg.media.type.startsWith('image/') ? 'fa-image' : 'fa-film'}"></i>
+                ${escapeHtml(msg.media.name)} (${sizeMB} MB)
+              </div>
+              <button onclick="deleteSingleMedia('${msg.id}')" style="background:transparent; border:none; color:var(--danger); cursor:pointer;">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            `;
+            container.appendChild(row);
+          }
+        });
+
+        if (!mediaFound) {
+          container.innerHTML = '<div style="font-size:12px; color:var(--text-sub); text-align:center;">Tidak ada berkas media tersimpan.</div>';
+        }
+      });
+    }
+
+    function deleteSingleMedia(msgId) {
+      if (confirm("Hapus file media ini dari chat?")) {
+        db.ref(`chats/${msgId}/media`).remove()
+          .then(() => showToast("✅ Media dihapus!"))
+          .catch(() => alert("Gagal menghapus media."));
+      }
+    }
+
+    function deleteAllMedia() {
+      if (confirm("Apakah Anda yakin ingin menghapus SELURUH file foto dan video dari semua pesan? Teks chat tidak akan terhapus.")) {
+        db.ref('chats').once('value', (snapshot) => {
+          const data = snapshot.val();
+          if (!data) return;
+
+          const updates = {};
+          Object.keys(data).forEach((key) => {
+            if (data[key].media) {
+              updates[`chats/${key}/media`] = null;
+            }
+          });
+
+          db.ref().update(updates)
+            .then(() => showToast("✅ Semua file media berhasil dibersihkan!"))
+            .catch(() => alert("Gagal membersihkan media."));
+        });
+      }
+    }
+
+    function deleteAllChats() {
+      if (confirm("⚠️ PERINGATAN: Seluruh riwayat obrolan akan dihapus secara permanen. Lanjutkan?")) {
+        db.ref('chats').remove()
+          .then(() => showToast("✅ Seluruh riwayat chat dibersihkan!"))
+          .catch(() => alert("Gagal menghapus riwayat chat."));
+      }
     }
 
     function openStorageModal() { document.getElementById('storageModal').style.display = 'flex'; }
