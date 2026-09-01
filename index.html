@@ -115,7 +115,7 @@
       position: relative;
     }
 
-    /* HEADER */
+    /* HEADER & DROPDOWN */
     .chat-header {
       padding: 10px 16px;
       background: var(--glass-bg);
@@ -125,6 +125,7 @@
       align-items: center;
       flex-shrink: 0;
       z-index: 10;
+      position: relative;
     }
 
     .user-profile { display: flex; align-items: center; gap: 12px; }
@@ -147,7 +148,7 @@
     .dot-status { width: 7px; height: 7px; border-radius: 50%; background: #8696a0; }
     .dot-status.online { background: #00a884; box-shadow: 0 0 6px #00a884; }
 
-    .header-actions { display: flex; gap: 6px; }
+    .header-actions { display: flex; gap: 6px; position: relative; }
     .btn-icon {
       background: transparent;
       border: none;
@@ -160,6 +161,55 @@
       flex-shrink: 0;
     }
     .btn-icon:hover { background: rgba(255,255,255,0.05); }
+
+    /* DROPDOWN MENU */
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 48px; right: 0;
+      background: #202c33;
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      min-width: 180px;
+      z-index: 100;
+      overflow: hidden;
+    }
+    .dropdown-menu.show { display: block; }
+    .dropdown-item {
+      padding: 12px 16px;
+      font-size: 13.5px;
+      color: #e9edef;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .dropdown-item:hover { background: rgba(255,255,255,0.08); }
+
+    /* SEARCH BAR & DATE FILTER BAR */
+    .search-filter-bar {
+      display: none;
+      padding: 8px 12px;
+      background: #111b21;
+      border-bottom: 1px solid var(--glass-border);
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .search-filter-bar.show { display: flex; }
+    .search-filter-bar input[type="text"],
+    .search-filter-bar input[type="date"] {
+      flex: 1;
+      background: #2a3942;
+      border: none;
+      color: #e9edef;
+      padding: 8px 14px;
+      border-radius: 16px;
+      font-size: 13px;
+      outline: none;
+    }
 
     /* MESSAGES AREA */
     .chat-messages {
@@ -452,7 +502,31 @@
       <div class="header-actions">
         <button class="btn-icon" onclick="openStorageModal()" title="Cek Kuota Media"><i class="fa-solid fa-database"></i></button>
         <button class="btn-icon" onclick="logout()" title="Kunci Aplikasi"><i class="fa-solid fa-lock"></i></button>
+        <button class="btn-icon" onclick="toggleDropdownMenu()" title="Opsi"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+        
+        <!-- DROPDOWN MENU MENU TITIK TIGA -->
+        <div class="dropdown-menu" id="dropdownMenu">
+          <div class="dropdown-item" onclick="showSearchBar()">
+            <i class="fa-solid fa-magnifying-glass"></i> Cari Pesan
+          </div>
+          <div class="dropdown-item" onclick="showDatePicker()">
+            <i class="fa-solid fa-calendar-days"></i> Pilih Tanggal
+          </div>
+        </div>
       </div>
+    </div>
+
+    <!-- SEARCH & CALENDAR FILTER BARS -->
+    <div class="search-filter-bar" id="searchBarContainer">
+      <i class="fa-solid fa-magnifying-glass" style="color:var(--text-sub); font-size:13px;"></i>
+      <input type="text" id="searchInput" placeholder="Cari kata dalam chat..." oninput="filterMessagesBySearch()">
+      <button class="btn-icon" style="width:28px; height:28px; font-size:12px;" onclick="closeFilterBar()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="search-filter-bar" id="dateBarContainer">
+      <i class="fa-solid fa-calendar-days" style="color:var(--text-sub); font-size:13px;"></i>
+      <input type="date" id="datePickerInput" onchange="filterMessagesByDate()">
+      <button class="btn-icon" style="width:28px; height:28px; font-size:12px;" onclick="closeFilterBar()"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
     <div class="chat-messages" id="messagesContainer">
@@ -566,6 +640,7 @@
     let partnerUser = null;
     let totalStorageBytes = 0;
     let userAvatars = { papah: null, mamah: null };
+    let allMessages = [];
 
     // PEREKAM SUARA
     let mediaRecorder = null;
@@ -639,7 +714,6 @@
       });
     }
 
-    // FORMAT TANGGAL DAN HARI LENGKAP UNTUK HEADER
     function formatFullDate(timestamp) {
       if (!timestamp) return "Offline";
       const date = new Date(timestamp);
@@ -657,7 +731,6 @@
       return `Terakhir dilihat ${formatted} WITA`;
     }
 
-    // FORMAT TANGGAL DAN HARI SINGKAT UNTUK PESAN
     function formatMessageTime(timestamp) {
       const date = new Date(timestamp || Date.now());
       
@@ -692,7 +765,75 @@
       });
     }
 
-    // TOMBOL KIRIM VS MIKROFON
+    // DROPDOWN MENU HANDLER
+    function toggleDropdownMenu() {
+      const menu = document.getElementById('dropdownMenu');
+      menu.classList.toggle('show');
+    }
+
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('dropdownMenu');
+      const btnIcon = e.target.closest('.btn-icon');
+      if (!btnIcon || !btnIcon.innerHTML.includes('fa-ellipsis-vertical')) {
+        menu.classList.remove('show');
+      }
+    });
+
+    function showSearchBar() {
+      document.getElementById('dropdownMenu').classList.remove('show');
+      document.getElementById('dateBarContainer').classList.remove('show');
+      document.getElementById('searchBarContainer').classList.add('show');
+      document.getElementById('searchInput').focus();
+    }
+
+    function showDatePicker() {
+      document.getElementById('dropdownMenu').classList.remove('show');
+      document.getElementById('searchBarContainer').classList.remove('show');
+      document.getElementById('dateBarContainer').classList.add('show');
+    }
+
+    function closeFilterBar() {
+      document.getElementById('searchBarContainer').classList.remove('show');
+      document.getElementById('dateBarContainer').classList.remove('show');
+      document.getElementById('searchInput').value = '';
+      document.getElementById('datePickerInput').value = '';
+      renderMessages(allMessages);
+    }
+
+    function filterMessagesBySearch() {
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      if (!query) {
+        renderMessages(allMessages);
+        return;
+      }
+
+      const filtered = allMessages.filter(msg => 
+        (msg.text && msg.text.toLowerCase().includes(query)) ||
+        (msg.media && msg.media.name && msg.media.name.toLowerCase().includes(query))
+      );
+      renderMessages(filtered);
+    }
+
+    function filterMessagesByDate() {
+      const selectedDateStr = document.getElementById('datePickerInput').value;
+      if (!selectedDateStr) {
+        renderMessages(allMessages);
+        return;
+      }
+
+      const filtered = allMessages.filter(msg => {
+        if (!msg.timestamp) return false;
+        const msgDate = new Date(msg.timestamp);
+        const yyyy = msgDate.getFullYear();
+        const mm = String(msgDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(msgDate.getDate()).padStart(2, '0');
+        const formattedMsgDate = `${yyyy}-${mm}-${dd}`;
+        return formattedMsgDate === selectedDateStr;
+      });
+
+      renderMessages(filtered);
+    }
+
     function toggleActionBtn() {
       const text = document.getElementById('messageInput').value.trim();
       const icon = document.getElementById('btnActionIcon');
@@ -713,7 +854,6 @@
       }
     }
 
-    // PEREKAMAN PESAN SUARA (VOICE NOTE)
     async function toggleVoiceRecording() {
       const btn = document.getElementById('btnAction');
       const icon = document.getElementById('btnActionIcon');
@@ -745,7 +885,6 @@
             };
             reader.readAsDataURL(audioBlob);
 
-            // Matikan stream mikrofon
             stream.getTracks().forEach(track => track.stop());
           };
 
@@ -787,60 +926,72 @@
     }
 
     function listenMessages() {
-      const container = document.getElementById('messagesContainer');
-
       db.ref('chats').on('value', (snapshot) => {
-        container.innerHTML = '';
         const data = snapshot.val();
-        if (!data) return;
+        if (!data) {
+          allMessages = [];
+          renderMessages([]);
+          return;
+        }
 
-        const sortedMsgs = Object.values(data).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-
-        sortedMsgs.forEach((msg) => {
-          if (msg.sender === partnerUser && msg.status !== 'read') {
-            db.ref(`chats/${msg.id}`).update({ status: 'read' });
-          }
-
-          const isSent = msg.sender === currentUser;
-          const row = document.createElement('div');
-          row.className = `message-row ${isSent ? 'sent' : 'received'}`;
-
-          const timeStr = formatMessageTime(msg.timestamp);
-
-          let tickHTML = '';
-          if (isSent) {
-            const isRead = msg.status === 'read';
-            tickHTML = `<i class="fa-solid fa-check-double tick ${isRead ? 'read' : ''}"></i>`;
-          }
-
-          let mediaHTML = '';
-          if (msg.media) {
-            if (msg.media.type && msg.media.type.startsWith('image/')) {
-              mediaHTML = `<div class="media-container"><img src="${msg.media.url}" class="media-preview" onclick="openImageModal('${msg.media.url}', '${msg.media.name}')"></div>`;
-            } else if (msg.media.type && msg.media.type.startsWith('video/')) {
-              mediaHTML = `<div class="media-container"><video src="${msg.media.url}" controls class="media-video"></video></div>`;
-            } else if (msg.media.type && msg.media.type.startsWith('audio/')) {
-              mediaHTML = `<div style="margin-top:4px;"><audio src="${msg.media.url}" controls class="audio-player"></audio></div>`;
-            } else {
-              mediaHTML = `<div style="margin-top:4px; margin-bottom:4px;"><button onclick="downloadBase64('${msg.media.url}', '${msg.media.name}')" style="background:transparent; border:none; color:#00a884; cursor:pointer; font-size:12px;"><i class="fa-solid fa-file-arrow-down"></i> Unduh ${escapeHtml(msg.media.name)}</button></div>`;
-            }
-          }
-
-          row.innerHTML = `
-            <div class="bubble">
-              ${msg.text ? escapeHtml(msg.text) : ''}
-              ${mediaHTML}
-              <span class="msg-meta">
-                ${timeStr} WITA
-                ${tickHTML}
-              </span>
-            </div>
-          `;
-          container.appendChild(row);
-        });
-
-        container.scrollTop = container.scrollHeight;
+        allMessages = Object.values(data).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        renderMessages(allMessages);
       });
+    }
+
+    function renderMessages(msgList) {
+      const container = document.getElementById('messagesContainer');
+      container.innerHTML = '';
+
+      if (msgList.length === 0) {
+        container.innerHTML = `<div style="text-align:center; font-size:12px; color:var(--text-sub); margin-top:20px;">Pesan tidak ditemukan.</div>`;
+        return;
+      }
+
+      msgList.forEach((msg) => {
+        if (msg.sender === partnerUser && msg.status !== 'read') {
+          db.ref(`chats/${msg.id}`).update({ status: 'read' });
+        }
+
+        const isSent = msg.sender === currentUser;
+        const row = document.createElement('div');
+        row.className = `message-row ${isSent ? 'sent' : 'received'}`;
+
+        const timeStr = formatMessageTime(msg.timestamp);
+
+        let tickHTML = '';
+        if (isSent) {
+          const isRead = msg.status === 'read';
+          tickHTML = `<i class="fa-solid fa-check-double tick ${isRead ? 'read' : ''}"></i>`;
+        }
+
+        let mediaHTML = '';
+        if (msg.media) {
+          if (msg.media.type && msg.media.type.startsWith('image/')) {
+            mediaHTML = `<div class="media-container"><img src="${msg.media.url}" class="media-preview" onclick="openImageModal('${msg.media.url}', '${msg.media.name}')"></div>`;
+          } else if (msg.media.type && msg.media.type.startsWith('video/')) {
+            mediaHTML = `<div class="media-container"><video src="${msg.media.url}" controls class="media-video"></video></div>`;
+          } else if (msg.media.type && msg.media.type.startsWith('audio/')) {
+            mediaHTML = `<div style="margin-top:4px;"><audio src="${msg.media.url}" controls class="audio-player"></audio></div>`;
+          } else {
+            mediaHTML = `<div style="margin-top:4px; margin-bottom:4px;"><button onclick="downloadBase64('${msg.media.url}', '${msg.media.name}')" style="background:transparent; border:none; color:#00a884; cursor:pointer; font-size:12px;"><i class="fa-solid fa-file-arrow-down"></i> Unduh ${escapeHtml(msg.media.name)}</button></div>`;
+          }
+        }
+
+        row.innerHTML = `
+          <div class="bubble">
+            ${msg.text ? escapeHtml(msg.text) : ''}
+            ${mediaHTML}
+            <span class="msg-meta">
+              ${timeStr} WITA
+              ${tickHTML}
+            </span>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      container.scrollTop = container.scrollHeight;
     }
 
     function handleFileUpload(event) {
