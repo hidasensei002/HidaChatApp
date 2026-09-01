@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Firebase SDK (v8 Compat - Hanya App & Database agar 100% Gratis) -->
+  <!-- Firebase SDK (v8 Compat - Gratis) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -30,11 +30,13 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
     
-    body {
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      width: 100%;
       background: var(--bg-dark);
       background-image: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 70%);
       color: var(--text-main);
-      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -109,31 +111,34 @@
     .btn-role:hover { background: var(--primary); border-color: var(--primary); }
     .btn-role i { font-size: 24px; margin-bottom: 8px; display: block; }
 
-    /* CHAT CONTAINER */
+    /* CHAT CONTAINER FIX */
     .app-container {
       width: 100%;
       max-width: 768px;
-      height: 100vh;
+      height: 100%;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
       background: rgba(15, 23, 42, 0.6);
       border-left: 1px solid var(--glass-border);
       border-right: 1px solid var(--glass-border);
+      position: relative;
     }
 
     /* HEADER */
     .chat-header {
-      padding: 16px 20px;
+      padding: 12px 16px;
       background: var(--glass-bg);
       border-bottom: 1px solid var(--glass-border);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-shrink: 0;
     }
 
     .user-profile { display: flex; align-items: center; gap: 12px; }
     .avatar {
-      width: 42px; height: 42px;
+      width: 40px; height: 40px;
       border-radius: 50%;
       background: var(--primary);
       display: flex; align-items: center; justify-content: center;
@@ -146,7 +151,7 @@
     .dot-status { width: 8px; height: 8px; border-radius: 50%; background: #64748b; }
     .dot-status.online { background: #10b981; box-shadow: 0 0 8px #10b981; }
 
-    .header-actions { display: flex; gap: 10px; }
+    .header-actions { display: flex; gap: 8px; }
     .btn-icon {
       background: rgba(255,255,255,0.08);
       border: 1px solid var(--glass-border);
@@ -156,32 +161,34 @@
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       font-size: 14px;
+      flex-shrink: 0;
     }
 
     /* MESSAGES AREA */
     .chat-messages {
       flex: 1;
-      padding: 20px;
+      padding: 16px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      -webkit-overflow-scrolling: touch;
     }
 
     .message-row {
       display: flex;
       flex-direction: column;
-      max-width: 75%;
+      max-width: 80%;
     }
 
     .message-row.sent { align-self: flex-end; align-items: flex-end; }
     .message-row.received { align-self: flex-start; align-items: flex-start; }
 
     .bubble {
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-radius: 18px;
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 1.4;
       word-break: break-word;
       position: relative;
     }
@@ -202,17 +209,19 @@
 
     .media-preview {
       max-width: 100%;
-      max-height: 250px;
+      max-height: 220px;
       border-radius: 12px;
       margin-top: 6px;
       cursor: pointer;
       object-fit: cover;
+      display: block;
     }
 
     .media-video {
       max-width: 100%;
       border-radius: 12px;
       margin-top: 6px;
+      display: block;
     }
 
     .msg-meta {
@@ -228,14 +237,15 @@
     .tick { font-size: 11px; color: #94a3b8; }
     .tick.read { color: #38bdf8; }
 
-    /* INPUT BAR */
+    /* INPUT BAR FIX */
     .chat-input-bar {
-      padding: 12px 16px;
+      padding: 10px 14px;
       background: var(--glass-bg);
       border-top: 1px solid var(--glass-border);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     .chat-input-bar input[type="text"] {
@@ -243,7 +253,7 @@
       background: rgba(15, 23, 42, 0.6);
       border: 1px solid var(--glass-border);
       color: #fff;
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-radius: 20px;
       font-size: 14px;
       outline: none;
@@ -254,11 +264,12 @@
       background: linear-gradient(135deg, var(--primary), var(--accent));
       color: white;
       border: none;
-      width: 44px; height: 44px;
+      width: 40px; height: 40px;
       border-radius: 50%;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
+      font-size: 15px;
+      flex-shrink: 0;
     }
 
     /* STORAGE MODAL */
@@ -369,32 +380,27 @@
   <div id="toast">Notification</div>
 
   <script>
-    // =========================================================
-    // TEMPEL KONFIGURASI FIREBASE KAMU DI BAWAH INI
-    // =========================================================
     const firebaseConfig = {
-  apiKey: "AIzaSyB5qc74Umga6xC0CfNInQbJJqwJ5Ag2KdU",
-  authDomain: "private-chat-hida.firebaseapp.com",
-  databaseURL: "https://private-chat-hida-default-rtdb.firebaseio.com",
-  projectId: "private-chat-hida",
-  storageBucket: "private-chat-hida.firebasestorage.app",
-  messagingSenderId: "758587861808",
-  appId: "1:758587861808:web:ab4d637488ca7cc1c836f5",
-  measurementId: "G-0WG2V4VWR5"
-};
+      apiKey: "AIzaSyB5qc74Umga6xC0CfNInQbJJqwJ5Ag2KdU",
+      authDomain: "private-chat-hida.firebaseapp.com",
+      databaseURL: "https://private-chat-hida-default-rtdb.firebaseio.com",
+      projectId: "private-chat-hida",
+      storageBucket: "private-chat-hida.firebasestorage.app",
+      messagingSenderId: "758587861808",
+      appId: "1:758587861808:web:ab4d637488ca7cc1c836f5",
+      measurementId: "G-0WG2V4VWR5"
+    };
 
-    // Inisialisasi Firebase Realtime Database
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
     const db = firebase.database();
 
     const PASSWORD_AKSES = "maubuka";
-    let currentUser = null; // 'papah' atau 'mamah'
-    let partnerUser = null; // 'mamah' atau 'papah'
+    let currentUser = null;
+    let partnerUser = null;
     let totalStorageBytes = 0;
 
-    // Password Check
     function verifyPassword() {
       const input = document.getElementById('passInput').value;
       if (input === PASSWORD_AKSES) {
@@ -405,7 +411,6 @@
       }
     }
 
-    // Role Selection
     function selectRole(role) {
       currentUser = role;
       partnerUser = role === 'papah' ? 'mamah' : 'papah';
@@ -420,7 +425,6 @@
       calculateStorageUsage();
     }
 
-    // Presence / Status Online System
     function initPresence() {
       const myPresenceRef = db.ref(`presence/${currentUser}`);
       const connectedRef = db.ref('.info/connected');
@@ -460,7 +464,6 @@
       });
     }
 
-    // Send Message
     async function sendMessage(mediaData = null) {
       const input = document.getElementById('messageInput');
       const text = input.value.trim();
@@ -472,7 +475,7 @@
         id: msgRef.key,
         sender: currentUser,
         text: text,
-        media: mediaData,
+        media: mediaData || null,
         timestamp: firebase.database.ServerValue.TIMESTAMP,
         status: 'sent'
       };
@@ -481,7 +484,6 @@
       input.value = '';
     }
 
-    // Listen Realtime Messages & Update Centang Biru
     function listenMessages() {
       const container = document.getElementById('messagesContainer');
 
@@ -491,7 +493,6 @@
         if (!data) return;
 
         Object.values(data).forEach((msg) => {
-          // Tandai Dibaca (Centang Biru) jika penerima melihat pesan
           if (msg.sender === partnerUser && msg.status !== 'read') {
             db.ref(`chats/${msg.id}`).update({ status: 'read' });
           }
@@ -511,9 +512,9 @@
 
           let mediaHTML = '';
           if (msg.media) {
-            if (msg.media.type.startsWith('image/')) {
+            if (msg.media.type && msg.media.type.startsWith('image/')) {
               mediaHTML = `<img src="${msg.media.url}" class="media-preview" onclick="downloadBase64('${msg.media.url}', '${msg.media.name}')">`;
-            } else if (msg.media.type.startsWith('video/')) {
+            } else if (msg.media.type && msg.media.type.startsWith('video/')) {
               mediaHTML = `<video src="${msg.media.url}" controls class="media-video"></video>`;
             } else {
               mediaHTML = `<div style="margin-top:6px;"><button onclick="downloadBase64('${msg.media.url}', '${msg.media.name}')" style="background:transparent; border:none; color:var(--accent); cursor:pointer; font-size:12px;"><i class="fa-solid fa-file-arrow-down"></i> Unduh ${escapeHtml(msg.media.name)}</button></div>`;
@@ -522,7 +523,7 @@
 
           row.innerHTML = `
             <div class="bubble">
-              ${escapeHtml(msg.text)}
+              ${msg.text ? escapeHtml(msg.text) : ''}
               ${mediaHTML}
               <div class="msg-meta">
                 <span>${timeStr} WITA</span>
@@ -537,13 +538,12 @@
       });
     }
 
-    // Handle Upload via Base64 (Tanpa Firebase Storage - 100% Gratis)
     function handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
 
-      if (file.size > 5 * 1024 * 1024) {
-        showToast("⚠️ Ukuran file maksimal 5MB!");
+      if (file.size > 2 * 1024 * 1024) {
+        showToast("⚠️ Ukuran file maksimal 2MB untuk menjaga kestabilan database!");
         return;
       }
 
@@ -566,17 +566,15 @@
       reader.readAsDataURL(file);
     }
 
-    // Helper Download File Base64
     function downloadBase64(url, filename) {
       const a = document.createElement('a');
       a.href = url;
-      a.download = filename || 'download';
+      a.download = filename || 'file_download';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     }
 
-    // Hitung Kapasitas Database
     function calculateStorageUsage() {
       db.ref('chats').on('value', (snapshot) => {
         let bytes = 0;
@@ -591,8 +589,8 @@
     }
 
     function updateStorageUI() {
-      const mbUsed = (totalStorageBytes / (1024 * 1024)).toFixed(1);
-      const limitMB = 1024; // Limit 1GB Database Spark Plan
+      const mbUsed = (totalStorageBytes / (1024 * 1024)).toFixed(2);
+      const limitMB = 1024;
       const pct = Math.min(((mbUsed / limitMB) * 100).toFixed(1), 100);
 
       document.getElementById('storageUsedText').innerText = `${mbUsed} MB`;
