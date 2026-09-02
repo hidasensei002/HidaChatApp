@@ -39,6 +39,10 @@
       justify-content: center;
       align-items: center;
       overflow: hidden;
+      /* MATIKAN PULL-TO-REFRESH BROWSER / WEBVIEW */
+      overscroll-behavior: none;
+      overscroll-behavior-y: none;
+      touch-action: manipulation;
     }
 
     /* LOCK SCREEN */
@@ -65,6 +69,7 @@
       box-shadow: 0 20px 50px rgba(0,0,0,0.6);
       max-height: 90vh;
       overflow-y: auto;
+      overscroll-behavior-y: contain;
     }
 
     .modal-box i.icon-head { font-size: 42px; color: var(--accent); margin-bottom: 16px; }
@@ -222,6 +227,8 @@
       flex-direction: column;
       gap: 6px;
       -webkit-overflow-scrolling: touch;
+      /* MENCEGAH EFEK REFRESH SAAT SCROLL CHAT SAMPAI ATAS */
+      overscroll-behavior-y: contain;
       background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0);
       background-size: 16px 16px;
     }
@@ -428,6 +435,7 @@
     .media-list-container {
       max-height: 250px;
       overflow-y: auto;
+      overscroll-behavior-y: contain;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -524,6 +532,7 @@
     .timeline-container {
       max-height: 180px;
       overflow-y: auto;
+      overscroll-behavior-y: contain;
       display: flex;
       flex-direction: column;
       gap: 6px;
