@@ -1682,7 +1682,6 @@ input[type="password"] {
 <script>
 /* ============================================================
    FIREBASE CONFIG
-   SUDAH DIISI SESUAI KODE ASLI
 ============================================================ */
 
 const firebaseConfig = {
@@ -1743,60 +1742,29 @@ let userAvatars = {
   mamah:null
 };
 
-/*
-  Hanya pesan yang sudah dimuat.
-  Tidak lagi memuat seluruh database setiap saat.
-*/
 let allMessages = [];
-
-/*
-  ID pesan yang sudah ada di memory.
-*/
 const messageMap = new Map();
 
-/*
-  Query/listener Firebase.
-*/
 let latestMessagesQuery = null;
-let childChangedHandler = null;
-let childRemovedHandler = null;
 
-/*
-  Pagination.
-*/
 let oldestMessageKey = null;
 let newestMessageKey = null;
 let hasMoreOlderMessages = true;
 let isLoadingOlder = false;
 
-/*
-  Filter.
-*/
 let activeFilter = null;
 
-/*
-  Session.
-*/
 let currentSessionRef = null;
 let sessionStartTime = null;
 
-/*
-  Analytics.
-*/
 let analyticsSelectedUser = 'papah';
 let hourlyChartInstance = null;
 let cachedUserSessions = [];
 
-/*
-  Voice recording.
-*/
 let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 
-/*
-  Scroll state.
-*/
 let userNearBottom = true;
 
 /* ============================================================
@@ -1808,21 +1776,16 @@ let touchStartY = 0;
 document.addEventListener(
   'touchstart',
   function(e) {
-
     if (e.touches.length === 1) {
       touchStartY = e.touches[0].clientY;
     }
-
   },
-  {
-    passive:false
-  }
+  { passive:false }
 );
 
 document.addEventListener(
   'touchmove',
   function(e) {
-
     if (!e.touches.length) return;
 
     const touchY = e.touches[0].clientY;
@@ -1834,35 +1797,18 @@ document.addEventListener(
       );
 
     if (scrollable) {
-
-      if (
-        touchDiff > 0 &&
-        scrollable.scrollTop <= 0
-      ) {
-
+      if (touchDiff > 0 && scrollable.scrollTop <= 0) {
         if (e.cancelable) {
           e.preventDefault();
         }
-
       }
-
     } else {
-
-      if (
-        touchDiff > 0 &&
-        e.cancelable
-      ) {
-
+      if (touchDiff > 0 && e.cancelable) {
         e.preventDefault();
-
       }
-
     }
-
   },
-  {
-    passive:false
-  }
+  { passive:false }
 );
 
 /* ============================================================
@@ -1872,16 +1818,12 @@ document.addEventListener(
 document.addEventListener(
   'DOMContentLoaded',
   function() {
-
-    const container =
-      document.getElementById('messagesContainer');
+    const container = document.getElementById('messagesContainer');
 
     if (container) {
-
       container.addEventListener(
         'scroll',
         function() {
-
           const distance =
             container.scrollHeight -
             container.scrollTop -
@@ -1895,19 +1837,12 @@ document.addEventListener(
             !isLoadingOlder &&
             !activeFilter
           ) {
-
             loadOlderMessages();
-
           }
-
         },
-        {
-          passive:true
-        }
+        { passive:true }
       );
-
     }
-
   }
 );
 
@@ -1916,30 +1851,18 @@ document.addEventListener(
 ============================================================ */
 
 function verifyPassword() {
-
-  const input =
-    document.getElementById('passInput').value.trim();
+  const input = document.getElementById('passInput').value.trim();
 
   if (input === PASS_PAPAH) {
-
     startChatSession('papah');
-
   } else if (input === PASS_MAMAH) {
-
     startChatSession('mamah');
-
   } else if (input === PASS_ADMIN) {
-
     openAdminDashboard();
-
   } else {
-
     showToast("❌ Password Salah!");
-
     document.getElementById('passInput').value = '';
-
   }
-
 }
 
 /* ============================================================
@@ -1947,37 +1870,19 @@ function verifyPassword() {
 ============================================================ */
 
 function startChatSession(role) {
-
   currentUser = role;
-
-  partnerUser =
-    role === 'papah'
-      ? 'mamah'
-      : 'papah';
+  partnerUser = role === 'papah' ? 'mamah' : 'papah';
 
   document.getElementById('lockScreen').style.display = 'none';
-
   document.getElementById('partnerName').innerText =
-    partnerUser === 'mamah'
-      ? 'Mamah ❤️'
-      : 'Papah 💙';
+    partnerUser === 'mamah' ? 'Mamah ❤️' : 'Papah 💙';
 
   recordAppSessionStart();
-
   listenAvatars();
-
   initPresence();
-
   listenMessagesOptimized();
-
   listenPartnerPresence();
-
-  /*
-    Tidak langsung membaca seluruh chats.
-    Hanya mengambil metadata/storage node jika tersedia.
-  */
   calculateStorageUsageOptimized();
-
 }
 
 /* ============================================================
@@ -1985,71 +1890,31 @@ function startChatSession(role) {
 ============================================================ */
 
 function recordAppSessionStart() {
-
-  if (!currentUser || currentUser === 'admin') {
-    return;
-  }
+  if (!currentUser || currentUser === 'admin') return;
 
   sessionStartTime = Date.now();
-
-  const sessionRef =
-    db.ref(
-      `analytics/sessions/${currentUser}`
-    ).push();
+  const sessionRef = db.ref(`analytics/sessions/${currentUser}`).push();
 
   currentSessionRef = sessionRef;
 
   sessionRef.set({
-
-    startTime:
-      firebase.database.ServerValue.TIMESTAMP,
-
-    durationSeconds:0
-
+    startTime: firebase.database.ServerValue.TIMESTAMP,
+    durationSeconds: 0
   });
 
-  window.addEventListener(
-    'beforeunload',
-    recordAppSessionEnd
-  );
-
-  document.addEventListener(
-    'visibilitychange',
-    function() {
-
-      if (
-        document.visibilityState === 'hidden'
-      ) {
-
-        recordAppSessionEnd();
-
-      }
-
+  window.addEventListener('beforeunload', recordAppSessionEnd);
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+      recordAppSessionEnd();
     }
-  );
-
+  });
 }
 
 function recordAppSessionEnd() {
-
-  if (
-    currentSessionRef &&
-    sessionStartTime
-  ) {
-
-    const duration =
-      Math.floor(
-        (Date.now() - sessionStartTime) / 1000
-      );
-
-    currentSessionRef.update({
-
-      durationSeconds:duration
-
-    });
-
+  if (currentSessionRef && sessionStartTime) {
+    const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
+    currentSessionRef.update({ durationSeconds: duration });
   }
-
 }
 
 /* ============================================================
@@ -2057,63 +1922,37 @@ function recordAppSessionEnd() {
 ============================================================ */
 
 function listenAvatars() {
+  db.ref('avatars').on('value', function(snapshot) {
+    const data = snapshot.val() || {};
+    userAvatars = data;
 
-  db.ref('avatars').on(
-    'value',
-    function(snapshot) {
+    updatePartnerAvatar();
 
-      const data =
-        snapshot.val() || {};
-
-      userAvatars = data;
-
-      updatePartnerAvatar();
-
-      if (
-        document.getElementById('adminModal').style.display === 'flex'
-      ) {
-
-        updateAdminAvatarUI();
-
-      }
-
+    if (document.getElementById('adminModal').style.display === 'flex') {
+      updateAdminAvatarUI();
     }
-  );
-
+  });
 }
 
 function updatePartnerAvatar() {
-
-  const partnerAv =
-    userAvatars[partnerUser];
-
-  const element =
-    document.getElementById('partnerAvatar');
+  const partnerAv = userAvatars[partnerUser];
+  const element = document.getElementById('partnerAvatar');
 
   if (!element) return;
 
   if (partnerAv) {
-
     element.innerHTML = '';
-
-    const img =
-      document.createElement('img');
-
+    const img = document.createElement('img');
     img.src = partnerAv;
     img.loading = 'lazy';
     img.alt = 'Avatar';
-
     element.appendChild(img);
-
   } else {
-
     element.innerHTML =
       partnerUser === 'mamah'
         ? '<i class="fa-solid fa-user-nurse"></i>'
         : '<i class="fa-solid fa-user-tie"></i>';
-
   }
-
 }
 
 /* ============================================================
@@ -2121,42 +1960,22 @@ function updatePartnerAvatar() {
 ============================================================ */
 
 function initPresence() {
+  const myPresenceRef = db.ref(`presence/${currentUser}`);
+  const connectedRef = db.ref('.info/connected');
 
-  const myPresenceRef =
-    db.ref(`presence/${currentUser}`);
+  connectedRef.on('value', function(snap) {
+    if (snap.val() === true) {
+      myPresenceRef.onDisconnect().set({
+        status: 'offline',
+        lastSeen: firebase.database.ServerValue.TIMESTAMP
+      });
 
-  const connectedRef =
-    db.ref('.info/connected');
-
-  connectedRef.on(
-    'value',
-    function(snap) {
-
-      if (snap.val() === true) {
-
-        myPresenceRef.onDisconnect().set({
-
-          status:'offline',
-
-          lastSeen:
-            firebase.database.ServerValue.TIMESTAMP
-
-        });
-
-        myPresenceRef.set({
-
-          status:'online',
-
-          lastSeen:
-            firebase.database.ServerValue.TIMESTAMP
-
-        });
-
-      }
-
+      myPresenceRef.set({
+        status: 'online',
+        lastSeen: firebase.database.ServerValue.TIMESTAMP
+      });
     }
-  );
-
+  });
 }
 
 /* ============================================================
@@ -2164,68 +1983,34 @@ function initPresence() {
 ============================================================ */
 
 function formatFullDate(timestamp) {
+  if (!timestamp) return "Offline";
 
-  if (!timestamp) {
-    return "Offline";
-  }
-
-  const date =
-    new Date(timestamp);
-
+  const date = new Date(timestamp);
   const options = {
-
-    timeZone:'Asia/Makassar',
-
-    weekday:'long',
-
-    day:'numeric',
-
-    month:'short',
-
-    hour:'2-digit',
-
-    minute:'2-digit'
-
+    timeZone: 'Asia/Makassar',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
   };
 
-  const formatted =
-    new Intl.DateTimeFormat(
-      'id-ID',
-      options
-    ).format(date);
-
+  const formatted = new Intl.DateTimeFormat('id-ID', options).format(date);
   return `Terakhir dilihat ${formatted} WITA`;
-
 }
 
 function formatMessageTime(timestamp) {
-
-  const date =
-    new Date(
-      timestamp || Date.now()
-    );
-
+  const date = new Date(timestamp || Date.now());
   const options = {
-
-    timeZone:'Asia/Makassar',
-
-    weekday:'short',
-
-    day:'numeric',
-
-    month:'short',
-
-    hour:'2-digit',
-
-    minute:'2-digit'
-
+    timeZone: 'Asia/Makassar',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
   };
 
-  return new Intl.DateTimeFormat(
-    'id-ID',
-    options
-  ).format(date);
-
+  return new Intl.DateTimeFormat('id-ID', options).format(date);
 }
 
 /* ============================================================
@@ -2233,57 +2018,22 @@ function formatMessageTime(timestamp) {
 ============================================================ */
 
 function listenPartnerPresence() {
+  db.ref(`presence/${partnerUser}`).on('value', function(snapshot) {
+    const data = snapshot.val();
+    const dot = document.getElementById('partnerDot');
+    const txt = document.getElementById('partnerStatusText');
 
-  db.ref(`presence/${partnerUser}`).on(
-    'value',
-    function(snapshot) {
-
-      const data =
-        snapshot.val();
-
-      const dot =
-        document.getElementById('partnerDot');
-
-      const txt =
-        document.getElementById('partnerStatusText');
-
-      if (
-        data &&
-        data.status === 'online'
-      ) {
-
-        dot.className =
-          'dot-status online';
-
-        txt.innerText =
-          'Online';
-
-      } else if (
-        data &&
-        data.lastSeen
-      ) {
-
-        dot.className =
-          'dot-status';
-
-        txt.innerText =
-          formatFullDate(
-            data.lastSeen
-          );
-
-      } else {
-
-        dot.className =
-          'dot-status';
-
-        txt.innerText =
-          'Offline';
-
-      }
-
+    if (data && data.status === 'online') {
+      dot.className = 'dot-status online';
+      txt.innerText = 'Online';
+    } else if (data && data.lastSeen) {
+      dot.className = 'dot-status';
+      txt.innerText = formatFullDate(data.lastSeen);
+    } else {
+      dot.className = 'dot-status';
+      txt.innerText = 'Offline';
     }
-  );
-
+  });
 }
 
 /* ============================================================
@@ -2291,221 +2041,86 @@ function listenPartnerPresence() {
 ============================================================ */
 
 function toggleDropdownMenu() {
-
-  document
-    .getElementById('dropdownMenu')
-    .classList.toggle('show');
-
+  document.getElementById('dropdownMenu').classList.toggle('show');
 }
 
-document.addEventListener(
-  'click',
-  function(e) {
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('dropdownMenu');
+  const button = document.getElementById('menuButton');
 
-    const menu =
-      document.getElementById(
-        'dropdownMenu'
-      );
-
-    const button =
-      document.getElementById(
-        'menuButton'
-      );
-
-    if (
-      menu &&
-      button &&
-      !menu.contains(e.target) &&
-      !button.contains(e.target)
-    ) {
-
-      menu.classList.remove('show');
-
-    }
-
+  if (menu && button && !menu.contains(e.target) && !button.contains(e.target)) {
+    menu.classList.remove('show');
   }
-);
+});
 
 /* ============================================================
    SEARCH / FILTER
 ============================================================ */
 
 function showSearchBar() {
-
-  document
-    .getElementById('dropdownMenu')
-    .classList.remove('show');
-
-  document
-    .getElementById('dateBarContainer')
-    .classList.remove('show');
-
-  document
-    .getElementById('categoryBarContainer')
-    .classList.remove('show');
-
-  document
-    .getElementById('searchBarContainer')
-    .classList.add('show');
+  document.getElementById('dropdownMenu').classList.remove('show');
+  document.getElementById('dateBarContainer').classList.remove('show');
+  document.getElementById('categoryBarContainer').classList.remove('show');
+  document.getElementById('searchBarContainer').classList.add('show');
 
   activeFilter = 'search';
-
-  document
-    .getElementById('searchInput')
-    .focus();
-
+  document.getElementById('searchInput').focus();
 }
 
 function showDatePicker() {
-
-  document
-    .getElementById('dropdownMenu')
-    .classList.remove('show');
-
-  document
-    .getElementById('searchBarContainer')
-    .classList.remove('show');
-
-  document
-    .getElementById('categoryBarContainer')
-    .classList.remove('show');
-
-  document
-    .getElementById('dateBarContainer')
-    .classList.add('show');
+  document.getElementById('dropdownMenu').classList.remove('show');
+  document.getElementById('searchBarContainer').classList.remove('show');
+  document.getElementById('categoryBarContainer').classList.remove('show');
+  document.getElementById('dateBarContainer').classList.add('show');
 
   activeFilter = 'date';
-
 }
 
 function filterMediaCategory(type) {
+  document.getElementById('dropdownMenu').classList.remove('show');
+  document.getElementById('searchBarContainer').classList.remove('show');
+  document.getElementById('dateBarContainer').classList.remove('show');
 
-  document
-    .getElementById('dropdownMenu')
-    .classList.remove('show');
-
-  document
-    .getElementById('searchBarContainer')
-    .classList.remove('show');
-
-  document
-    .getElementById('dateBarContainer')
-    .classList.remove('show');
-
-  const categoryBar =
-    document.getElementById(
-      'categoryBarContainer'
-    );
-
-  const categoryLabel =
-    document.getElementById(
-      'categoryLabelText'
-    );
+  const categoryBar = document.getElementById('categoryBarContainer');
+  const categoryLabel = document.getElementById('categoryLabelText');
 
   categoryBar.classList.add('show');
-
   activeFilter = type;
 
   let filtered = [];
 
   if (type === 'image') {
-
-    categoryLabel.innerText =
-      'Menampilkan: Kumpulan Foto 🖼️';
-
-    filtered =
-      allMessages.filter(
-        m =>
-          m.media &&
-          m.media.type &&
-          m.media.type.startsWith('image/')
-      );
-
+    categoryLabel.innerText = 'Menampilkan: Kumpulan Foto 🖼️';
+    filtered = allMessages.filter(m => m.media && m.media.type && m.media.type.startsWith('image/'));
   } else if (type === 'video') {
-
-    categoryLabel.innerText =
-      'Menampilkan: Kumpulan Video 🎥';
-
-    filtered =
-      allMessages.filter(
-        m =>
-          m.media &&
-          m.media.type &&
-          m.media.type.startsWith('video/')
-      );
-
+    categoryLabel.innerText = 'Menampilkan: Kumpulan Video 🎥';
+    filtered = allMessages.filter(m => m.media && m.media.type && m.media.type.startsWith('video/'));
   } else if (type === 'audio') {
-
-    categoryLabel.innerText =
-      'Menampilkan: Pesan Suara 🎙️';
-
-    filtered =
-      allMessages.filter(
-        m =>
-          m.media &&
-          m.media.type &&
-          m.media.type.startsWith('audio/')
-      );
-
+    categoryLabel.innerText = 'Menampilkan: Pesan Suara 🎙️';
+    filtered = allMessages.filter(m => m.media && m.media.type && m.media.type.startsWith('audio/'));
   } else if (type === 'file') {
-
-    categoryLabel.innerText =
-      'Menampilkan: Dokumen & File 📄';
-
-    filtered =
-      allMessages.filter(
-        m =>
-          m.media &&
-          m.media.type &&
-          !m.media.type.startsWith('image/') &&
-          !m.media.type.startsWith('video/') &&
-          !m.media.type.startsWith('audio/')
-      );
-
+    categoryLabel.innerText = 'Menampilkan: Dokumen & File 📄';
+    filtered = allMessages.filter(
+      m => m.media && m.media.type &&
+      !m.media.type.startsWith('image/') &&
+      !m.media.type.startsWith('video/') &&
+      !m.media.type.startsWith('audio/')
+    );
   }
 
-  renderMessages(
-    filtered,
-    {
-      forceBottom:false,
-      markRead:false
-    }
-  );
-
+  renderMessages(filtered, { forceBottom: false, markRead: false });
 }
 
 function closeFilterBar() {
+  document.getElementById('searchBarContainer').classList.remove('show');
+  document.getElementById('dateBarContainer').classList.remove('show');
+  document.getElementById('categoryBarContainer').classList.remove('show');
 
-  document
-    .getElementById('searchBarContainer')
-    .classList.remove('show');
-
-  document
-    .getElementById('dateBarContainer')
-    .classList.remove('show');
-
-  document
-    .getElementById('categoryBarContainer')
-    .classList.remove('show');
-
-  document
-    .getElementById('searchInput')
-    .value = '';
-
-  document
-    .getElementById('datePickerInput')
-    .value = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('datePickerInput').value = '';
 
   activeFilter = null;
-
-  renderMessages(
-    allMessages,
-    {
-      forceBottom:true,
-      markRead:true
-    }
-  );
-
+  renderMessages(allMessages, { forceBottom: true, markRead: true });
 }
 
 /* ============================================================
@@ -2513,64 +2128,21 @@ function closeFilterBar() {
 ============================================================ */
 
 function filterMessagesBySearch() {
-
-  const query =
-    document
-      .getElementById('searchInput')
-      .value
-      .toLowerCase()
-      .trim();
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
 
   if (!query) {
-
-    renderMessages(
-      allMessages,
-      {
-        forceBottom:false,
-        markRead:false
-      }
-    );
-
+    renderMessages(allMessages, { forceBottom: false, markRead: false });
     return;
-
   }
 
-  const filtered =
-    allMessages.filter(
-      function(msg) {
-
-        return (
-
-          (
-            msg.text &&
-            msg.text
-              .toLowerCase()
-              .includes(query)
-          )
-
-          ||
-
-          (
-            msg.media &&
-            msg.media.name &&
-            msg.media.name
-              .toLowerCase()
-              .includes(query)
-          )
-
-        );
-
-      }
+  const filtered = allMessages.filter(function(msg) {
+    return (
+      (msg.text && msg.text.toLowerCase().includes(query)) ||
+      (msg.media && msg.media.name && msg.media.name.toLowerCase().includes(query))
     );
+  });
 
-  renderMessages(
-    filtered,
-    {
-      forceBottom:false,
-      markRead:false
-    }
-  );
-
+  renderMessages(filtered, { forceBottom: false, markRead: false });
 }
 
 /* ============================================================
@@ -2578,90 +2150,35 @@ function filterMessagesBySearch() {
 ============================================================ */
 
 function filterMessagesByDate() {
-
-  const selectedDateStr =
-    document
-      .getElementById('datePickerInput')
-      .value;
+  const selectedDateStr = document.getElementById('datePickerInput').value;
 
   if (!selectedDateStr) {
-
-    renderMessages(
-      allMessages,
-      {
-        forceBottom:false,
-        markRead:false
-      }
-    );
-
+    renderMessages(allMessages, { forceBottom: false, markRead: false });
     return;
-
   }
 
-  const filtered =
-    allMessages.filter(
-      function(msg) {
+  const filtered = allMessages.filter(function(msg) {
+    if (!msg.timestamp) return false;
 
-        if (!msg.timestamp) {
-          return false;
-        }
+    const date = new Date(msg.timestamp);
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Makassar',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(date);
 
-        const date =
-          new Date(msg.timestamp);
+    let year = '', month = '', day = '';
+    parts.forEach(function(part) {
+      if (part.type === 'year') year = part.value;
+      if (part.type === 'month') month = part.value;
+      if (part.type === 'day') day = part.value;
+    });
 
-        /*
-          Menggunakan WITA agar filter tanggal
-          konsisten dengan tampilan aplikasi.
-        */
-        const parts =
-          new Intl.DateTimeFormat(
-            'en-CA',
-            {
-              timeZone:'Asia/Makassar',
-              year:'numeric',
-              month:'2-digit',
-              day:'2-digit'
-            }
-          ).formatToParts(date);
+    return `${year}-${month}-${day}` === selectedDateStr;
+  });
 
-        let year = '';
-        let month = '';
-        let day = '';
-
-        parts.forEach(
-          function(part) {
-
-            if (part.type === 'year') {
-              year = part.value;
-            }
-
-            if (part.type === 'month') {
-              month = part.value;
-            }
-
-            if (part.type === 'day') {
-              day = part.value;
-            }
-
-          }
-        );
-
-        return (
-          `${year}-${month}-${day}` ===
-          selectedDateStr
-        );
-
-      }
-    );
-
-  renderMessages(
-    filtered,
-    {
-      forceBottom:false,
-      markRead:false
-    }
-  );
-
+  renderMessages(filtered, { forceBottom: false, markRead: false });
 }
 
 /* ============================================================
@@ -2669,50 +2186,23 @@ function filterMessagesByDate() {
 ============================================================ */
 
 function toggleActionBtn() {
-
-  const text =
-    document
-      .getElementById('messageInput')
-      .value
-      .trim();
-
-  const icon =
-    document.getElementById(
-      'btnActionIcon'
-    );
+  const text = document.getElementById('messageInput').value.trim();
+  const icon = document.getElementById('btnActionIcon');
 
   if (text.length > 0) {
-
-    icon.className =
-      'fa-solid fa-paper-plane';
-
+    icon.className = 'fa-solid fa-paper-plane';
   } else {
-
-    icon.className =
-      'fa-solid fa-microphone';
-
+    icon.className = 'fa-solid fa-microphone';
   }
-
 }
 
 function handleActionBtn() {
-
-  const text =
-    document
-      .getElementById('messageInput')
-      .value
-      .trim();
-
+  const text = document.getElementById('messageInput').value.trim();
   if (text.length > 0) {
-
     sendMessage();
-
   } else {
-
     toggleVoiceRecording();
-
   }
-
 }
 
 /* ============================================================
@@ -2720,177 +2210,77 @@ function handleActionBtn() {
 ============================================================ */
 
 async function toggleVoiceRecording() {
-
-  const btn =
-    document.getElementById(
-      'btnAction'
-    );
-
-  const icon =
-    document.getElementById(
-      'btnActionIcon'
-    );
+  const btn = document.getElementById('btnAction');
+  const icon = document.getElementById('btnActionIcon');
 
   if (!isRecording) {
-
     try {
-
-      if (
-        !navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia
-      ) {
-
-        showToast(
-          '❌ Browser tidak mendukung mikrofon.'
-        );
-
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('❌ Browser tidak mendukung mikrofon.');
         return;
-
       }
 
-      const stream =
-        await navigator.mediaDevices.getUserMedia({
-          audio:true
-        });
-
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       let mimeType = '';
 
-      if (
-        MediaRecorder.isTypeSupported(
-          'audio/webm;codecs=opus'
-        )
-      ) {
-
-        mimeType =
-          'audio/webm;codecs=opus';
-
-      } else if (
-        MediaRecorder.isTypeSupported(
-          'audio/webm'
-        )
-      ) {
-
-        mimeType =
-          'audio/webm';
-
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm';
       }
 
-      mediaRecorder =
-        mimeType
-          ? new MediaRecorder(
-              stream,
-              {mimeType:mimeType}
-            )
-          : new MediaRecorder(stream);
+      mediaRecorder = mimeType
+        ? new MediaRecorder(stream, { mimeType: mimeType })
+        : new MediaRecorder(stream);
 
       audioChunks = [];
 
-      mediaRecorder.ondataavailable =
-        function(e) {
+      mediaRecorder.ondataavailable = function(e) {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
 
-          if (e.data.size > 0) {
-            audioChunks.push(e.data);
-          }
+      mediaRecorder.onstop = function() {
+        const audioBlob = new Blob(audioChunks, {
+          type: mediaRecorder.mimeType || 'audio/webm'
+        });
 
+        const reader = new FileReader();
+        showToast('⏳ Memproses pesan suara...');
+
+        reader.onload = function(e) {
+          const mediaObj = {
+            name: `VoiceNote_${Date.now()}.webm`,
+            type: audioBlob.type || 'audio/webm',
+            size: audioBlob.size,
+            url: e.target.result
+          };
+
+          sendMessage(mediaObj);
+          showToast('✅ Pesan suara terkirim!');
         };
 
-      mediaRecorder.onstop =
-        function() {
-
-          const audioBlob =
-            new Blob(
-              audioChunks,
-              {
-                type:
-                  mediaRecorder.mimeType ||
-                  'audio/webm'
-              }
-            );
-
-          const reader =
-            new FileReader();
-
-          showToast(
-            '⏳ Memproses pesan suara...'
-          );
-
-          reader.onload =
-            function(e) {
-
-              const mediaObj = {
-
-                name:
-                  `VoiceNote_${Date.now()}.webm`,
-
-                type:
-                  audioBlob.type ||
-                  'audio/webm',
-
-                size:
-                  audioBlob.size,
-
-                url:
-                  e.target.result
-
-              };
-
-              sendMessage(mediaObj);
-
-              showToast(
-                '✅ Pesan suara terkirim!'
-              );
-
-            };
-
-          reader.readAsDataURL(audioBlob);
-
-          stream
-            .getTracks()
-            .forEach(
-              track =>
-                track.stop()
-            );
-
-        };
+        reader.readAsDataURL(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
 
       mediaRecorder.start();
-
       isRecording = true;
 
       btn.classList.add('recording');
-
-      icon.className =
-        'fa-solid fa-stop';
-
-      showToast(
-        '🎙️ Merekam suara... Klik lagi untuk berhenti'
-      );
-
+      icon.className = 'fa-solid fa-stop';
+      showToast('🎙️ Merekam suara... Klik lagi untuk berhenti');
     } catch (err) {
-
-      showToast(
-        '❌ Gagal mengakses mikrofon!'
-      );
-
+      showToast('❌ Gagal mengakses mikrofon!');
     }
-
   } else {
-
     if (mediaRecorder) {
-
       mediaRecorder.stop();
-
     }
 
     isRecording = false;
-
     btn.classList.remove('recording');
-
-    icon.className =
-      'fa-solid fa-microphone';
-
+    icon.className = 'fa-solid fa-microphone';
   }
-
 }
 
 /* ============================================================
@@ -2898,84 +2288,39 @@ async function toggleVoiceRecording() {
 ============================================================ */
 
 async function sendMessage(mediaData = null) {
+  if (!currentUser || currentUser === 'admin') return;
 
-  if (!currentUser || currentUser === 'admin') {
-    return;
-  }
+  const input = document.getElementById('messageInput');
+  const text = input.value.trim();
 
-  const input =
-    document.getElementById(
-      'messageInput'
-    );
-
-  const text =
-    input.value.trim();
-
-  if (!text && !mediaData) {
-    return;
-  }
+  if (!text && !mediaData) return;
 
   try {
-
-    const msgRef =
-      db.ref('chats').push();
-
+    const msgRef = db.ref('chats').push();
     const msgObj = {
-
-      id:msgRef.key,
-
-      sender:currentUser,
-
-      text:text,
-
-      media:mediaData || null,
-
-      timestamp:
-        firebase.database.ServerValue.TIMESTAMP,
-
-      status:'sent'
-
+      id: msgRef.key,
+      sender: currentUser,
+      text: text,
+      media: mediaData || null,
+      timestamp: firebase.database.ServerValue.TIMESTAMP,
+      status: 'sent'
     };
 
     await msgRef.set(msgObj);
 
     input.value = '';
-
     toggleActionBtn();
 
-    /*
-      Langsung ke bawah jika user memang
-      sedang berada di bawah.
-    */
-    setTimeout(
-      function() {
-
-        const container =
-          document.getElementById(
-            'messagesContainer'
-          );
-
-        if (container) {
-
-          container.scrollTop =
-            container.scrollHeight;
-
-        }
-
-      },
-      80
-    );
-
+    setTimeout(function() {
+      const container = document.getElementById('messagesContainer');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 80);
   } catch (error) {
-
     console.error(error);
-
-    showToast(
-      '❌ Pesan gagal dikirim.'
-    );
-
+    showToast('❌ Pesan gagal dikirim.');
   }
-
 }
 
 /* ============================================================
@@ -2983,178 +2328,82 @@ async function sendMessage(mediaData = null) {
 ============================================================ */
 
 function listenMessagesOptimized() {
+  const container = document.getElementById('messagesContainer');
 
-  const container =
-    document.getElementById(
-      'messagesContainer'
+  container.innerHTML = `
+    <div class="chat-placeholder">
+      <span class="loading-spinner"></span>
+      Memuat pesan terbaru...
+    </div>
+  `;
+
+  latestMessagesQuery = db.ref('chats').orderByKey().limitToLast(INITIAL_MESSAGE_LIMIT);
+
+  /* PERBAIKAN: Fallback ID jika tidak ada di objek pesan */
+  latestMessagesQuery.on('child_added', function(snapshot) {
+    const msg = snapshot.val();
+    if (msg) {
+      msg.id = msg.id || snapshot.key;
+      addOrUpdateMessage(msg, true);
+    }
+  });
+
+  db.ref('chats').on('child_changed', function(snapshot) {
+    const msg = snapshot.val();
+    if (msg) {
+      msg.id = msg.id || snapshot.key;
+      addOrUpdateMessage(msg, false);
+    }
+  });
+
+  db.ref('chats').on('child_removed', function(snapshot) {
+    const key = snapshot.key;
+    messageMap.delete(key);
+
+    allMessages = Array.from(messageMap.values()).sort(
+      (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
     );
 
-  container.innerHTML =
-    `
-      <div class="chat-placeholder">
-        <span class="loading-spinner"></span>
-        Memuat pesan terbaru...
-      </div>
-    `;
-
-  /*
-    Ambil hanya pesan terakhir.
-  */
-  latestMessagesQuery =
-    db
-      .ref('chats')
-      .orderByKey()
-      .limitToLast(INITIAL_MESSAGE_LIMIT);
-
-  latestMessagesQuery.on(
-    'child_added',
-    function(snapshot) {
-
-      addOrUpdateMessage(
-        snapshot.val(),
-        true
-      );
-
-    }
-  );
-
-  /*
-    Perubahan status read tidak lagi
-    memuat seluruh database.
-  */
-  db.ref('chats').on(
-    'child_changed',
-    function(snapshot) {
-
-      const msg =
-        snapshot.val();
-
-      addOrUpdateMessage(
-        msg,
-        false
-      );
-
-    }
-  );
-
-  /*
-    Jika pesan dihapus, hapus dari memory.
-  */
-  db.ref('chats').on(
-    'child_removed',
-    function(snapshot) {
-
-      const key =
-        snapshot.key;
-
-      messageMap.delete(key);
-
-      allMessages =
-        Array.from(
-          messageMap.values()
-        ).sort(
-          (a,b) =>
-            (a.timestamp || 0) -
-            (b.timestamp || 0)
-        );
-
-      renderMessages(
-        allMessages,
-        {
-          forceBottom:false,
-          markRead:false
-        }
-      );
-
-    }
-  );
-
+    renderMessages(allMessages, { forceBottom: false, markRead: false });
+  });
 }
 
 /* ============================================================
    ADD / UPDATE MESSAGE
 ============================================================ */
 
-function addOrUpdateMessage(
-  msg,
-  isNew
-) {
+function addOrUpdateMessage(msg, isNew) {
+  if (!msg || !msg.id) return;
 
-  if (!msg || !msg.id) {
-    return;
-  }
+  const wasAlready = messageMap.has(msg.id);
+  messageMap.set(msg.id, msg);
 
-  const wasAlready =
-    messageMap.has(msg.id);
-
-  messageMap.set(
-    msg.id,
-    msg
+  allMessages = Array.from(messageMap.values()).sort(
+    (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
   );
 
-  allMessages =
-    Array.from(
-      messageMap.values()
-    ).sort(
-      (a,b) =>
-        (a.timestamp || 0) -
-        (b.timestamp || 0)
-    );
-
-  /*
-    Tentukan key terlama/terbaru.
-  */
   if (allMessages.length > 0) {
-
-    oldestMessageKey =
-      allMessages[0].id;
-
-    newestMessageKey =
-      allMessages[
-        allMessages.length - 1
-      ].id;
-
+    oldestMessageKey = allMessages[0].id;
+    newestMessageKey = allMessages[allMessages.length - 1].id;
   }
 
-  /*
-    Jika filter aktif, jangan paksa
-    scroll ke bawah.
-  */
   if (activeFilter) {
-
     applyCurrentFilter();
-
     return;
-
   }
 
-  /*
-    Pesan baru.
-  */
-  renderMessages(
-    allMessages,
-    {
-      forceBottom:
-        !wasAlready && isNew && userNearBottom,
+  renderMessages(allMessages, {
+    forceBottom: !wasAlready && isNew && userNearBottom,
+    markRead: true
+  });
 
-      markRead:true
-    }
-  );
-
-  /*
-    Mark read hanya untuk pesan partner
-    dan bukan admin.
-  */
   if (
     currentUser !== 'admin' &&
     msg.sender === partnerUser &&
     msg.status !== 'read'
   ) {
-
     markMessageRead(msg.id);
-
   }
-
 }
 
 /* ============================================================
@@ -3162,18 +2411,8 @@ function addOrUpdateMessage(
 ============================================================ */
 
 function markMessageRead(messageId) {
-
-  if (
-    !messageId ||
-    currentUser === 'admin'
-  ) {
-    return;
-  }
-
-  db.ref(
-    `chats/${messageId}/status`
-  ).set('read');
-
+  if (!messageId || currentUser === 'admin') return;
+  db.ref(`chats/${messageId}/status`).set('read');
 }
 
 /* ============================================================
@@ -3181,37 +2420,18 @@ function markMessageRead(messageId) {
 ============================================================ */
 
 function applyCurrentFilter() {
-
   if (!activeFilter) {
-
-    renderMessages(
-      allMessages,
-      {
-        forceBottom:false,
-        markRead:false
-      }
-    );
-
+    renderMessages(allMessages, { forceBottom: false, markRead: false });
     return;
-
   }
 
   if (activeFilter === 'search') {
-
     filterMessagesBySearch();
-
   } else if (activeFilter === 'date') {
-
     filterMessagesByDate();
-
   } else {
-
-    filterMediaCategory(
-      activeFilter
-    );
-
+    filterMediaCategory(activeFilter);
   }
-
 }
 
 /* ============================================================
@@ -3219,248 +2439,107 @@ function applyCurrentFilter() {
 ============================================================ */
 
 async function loadOlderMessages() {
-
-  if (
-    isLoadingOlder ||
-    !hasMoreOlderMessages ||
-    !oldestMessageKey
-  ) {
-    return;
-  }
+  if (isLoadingOlder || !hasMoreOlderMessages || !oldestMessageKey) return;
 
   isLoadingOlder = true;
-
-  const container =
-    document.getElementById(
-      'messagesContainer'
-    );
-
-  const oldHeight =
-    container.scrollHeight;
-
-  const oldTop =
-    container.scrollTop;
+  const container = document.getElementById('messagesContainer');
+  const oldHeight = container.scrollHeight;
+  const oldTop = container.scrollTop;
 
   try {
+    const snapshot = await db
+      .ref('chats')
+      .orderByKey()
+      .endAt(oldestMessageKey)
+      .limitToLast(MESSAGE_PAGE_SIZE + 1)
+      .once('value');
 
-    /*
-      Ambil 51:
-      1 digunakan sebagai duplikat pembatas.
-    */
-    const snapshot =
-      await db
-        .ref('chats')
-        .orderByKey()
-        .endAt(oldestMessageKey)
-        .limitToLast(
-          MESSAGE_PAGE_SIZE + 1
-        )
-        .once('value');
+    const data = snapshot.val() || {};
 
-    const data =
-      snapshot.val() || {};
-
-    const older =
-      Object.keys(data)
-        .map(
-          key => data[key]
-        )
-        .filter(
-          msg =>
-            msg &&
-            msg.id !== oldestMessageKey
-        )
-        .sort(
-          (a,b) =>
-            (a.timestamp || 0) -
-            (b.timestamp || 0)
-        );
+    const older = Object.keys(data)
+      .map(key => {
+        const item = data[key];
+        if (item) item.id = item.id || key;
+        return item;
+      })
+      .filter(msg => msg && msg.id !== oldestMessageKey)
+      .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
     if (older.length === 0) {
-
       hasMoreOlderMessages = false;
-
-      showToast(
-        '📚 Semua pesan lama sudah dimuat.'
-      );
-
+      showToast('📚 Semua pesan lama sudah dimuat.');
     } else {
-
-      older.forEach(
-        function(msg) {
-
-          if (msg && msg.id) {
-
-            messageMap.set(
-              msg.id,
-              msg
-            );
-
-          }
-
+      older.forEach(function(msg) {
+        if (msg && msg.id) {
+          messageMap.set(msg.id, msg);
         }
-      );
+      });
 
-      allMessages =
-        Array.from(
-          messageMap.values()
-        ).sort(
-          (a,b) =>
-            (a.timestamp || 0) -
-            (b.timestamp || 0)
-        );
+      allMessages = Array.from(messageMap.values()).sort(
+        (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
+      );
 
       if (older.length < MESSAGE_PAGE_SIZE) {
-
         hasMoreOlderMessages = false;
-
       }
 
-      renderMessages(
-        allMessages,
-        {
-          forceBottom:false,
-          markRead:false,
-          preserveScroll:true
-        }
-      );
+      renderMessages(allMessages, {
+        forceBottom: false,
+        markRead: false,
+        preserveScroll: true
+      });
 
-      /*
-        Pertahankan posisi scroll
-        agar tidak melompat.
-      */
-      requestAnimationFrame(
-        function() {
-
-          const newHeight =
-            container.scrollHeight;
-
-          container.scrollTop =
-            oldTop +
-            (newHeight - oldHeight);
-
-        }
-      );
-
+      requestAnimationFrame(function() {
+        const newHeight = container.scrollHeight;
+        container.scrollTop = oldTop + (newHeight - oldHeight);
+      });
     }
-
   } catch (error) {
-
-    console.error(
-      'Load older error:',
-      error
-    );
-
-    showToast(
-      '❌ Gagal memuat pesan lama.'
-    );
-
+    console.error('Load older error:', error);
+    showToast('❌ Gagal memuat pesan lama.');
   } finally {
-
     isLoadingOlder = false;
-
   }
-
 }
 
 /* ============================================================
    RENDER MESSAGES
 ============================================================ */
 
-function renderMessages(
-  msgList,
-  options = {}
-) {
+function renderMessages(msgList, options = {}) {
+  const container = document.getElementById('messagesContainer');
+  if (!container) return;
 
-  const container =
-    document.getElementById(
-      'messagesContainer'
-    );
+  const forceBottom = options.forceBottom === true;
+  const preserveScroll = options.preserveScroll === true;
 
-  if (!container) {
-    return;
-  }
-
-  const forceBottom =
-    options.forceBottom === true;
-
-  const preserveScroll =
-    options.preserveScroll === true;
-
-  /*
-    Untuk pagination jangan kosongkan
-    jika sedang menjaga posisi.
-  */
   if (!preserveScroll) {
-
     container.innerHTML = '';
-
   }
 
   if (!msgList || msgList.length === 0) {
-
     if (!preserveScroll) {
-
-      container.innerHTML =
-        `
-          <div class="chat-placeholder">
-            Pesan atau berkas tidak ditemukan.
-          </div>
-        `;
-
+      container.innerHTML = `<div class="chat-placeholder">Pesan atau berkas tidak ditemukan.</div>`;
     }
-
     return;
-
   }
 
-  /*
-    Karena jumlah awal dibatasi,
-    render ulang 50 pesan tetap ringan.
-  */
-  const fragment =
-    document.createDocumentFragment();
+  const fragment = document.createDocumentFragment();
+  msgList.forEach(function(msg) {
+    fragment.appendChild(createMessageElement(msg));
+  });
 
-  msgList.forEach(
-    function(msg) {
-
-      fragment.appendChild(
-        createMessageElement(
-          msg
-        )
-      );
-
-    }
-  );
-
-  /*
-    Untuk pagination:
-    render ulang semua lalu pertahankan scroll.
-  */
   if (preserveScroll) {
-
     container.innerHTML = '';
-
   }
 
   container.appendChild(fragment);
 
-  if (
-    forceBottom ||
-    userNearBottom
-  ) {
-
-    requestAnimationFrame(
-      function() {
-
-        container.scrollTop =
-          container.scrollHeight;
-
-      }
-    );
-
+  if (forceBottom || userNearBottom) {
+    requestAnimationFrame(function() {
+      container.scrollTop = container.scrollHeight;
+    });
   }
-
 }
 
 /* ============================================================
@@ -3468,101 +2547,41 @@ function renderMessages(
 ============================================================ */
 
 function createMessageElement(msg) {
+  const isSent = msg.sender === currentUser;
+  const row = document.createElement('div');
+  row.className = `message-row ${isSent ? 'sent' : 'received'}`;
 
-  const isSent =
-    msg.sender === currentUser;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
 
-  const row =
-    document.createElement('div');
-
-  row.className =
-    `message-row ${isSent ? 'sent' : 'received'}`;
-
-  const bubble =
-    document.createElement('div');
-
-  bubble.className =
-    'bubble';
-
-  /*
-    Text aman.
-  */
   if (msg.text) {
-
-    const textNode =
-      document.createTextNode(
-        msg.text
-      );
-
-    bubble.appendChild(
-      textNode
-    );
-
+    bubble.appendChild(document.createTextNode(msg.text));
   }
 
-  /*
-    Media.
-  */
   if (msg.media) {
-
-    const mediaElement =
-      createMediaElement(
-        msg.media
-      );
-
+    const mediaElement = createMediaElement(msg.media);
     if (mediaElement) {
-
-      bubble.appendChild(
-        mediaElement
-      );
-
+      bubble.appendChild(mediaElement);
     }
-
   }
 
-  const meta =
-    document.createElement('span');
-
-  meta.className =
-    'msg-meta';
-
-  const timeText =
-    document.createTextNode(
-      `${formatMessageTime(msg.timestamp)} WITA`
-    );
+  const meta = document.createElement('span');
+  meta.className = 'msg-meta';
 
   meta.appendChild(
-    timeText
+    document.createTextNode(`${formatMessageTime(msg.timestamp)} WITA`)
   );
 
   if (isSent) {
-
-    const tick =
-      document.createElement('i');
-
-    tick.className =
-      `fa-solid fa-check-double tick ${
-        msg.status === 'read'
-          ? 'read'
-          : ''
-      }`;
-
-    meta.appendChild(
-      tick
-    );
-
+    const tick = document.createElement('i');
+    tick.className = `fa-solid fa-check-double tick ${msg.status === 'read' ? 'read' : ''}`;
+    meta.appendChild(tick);
   }
 
-  bubble.appendChild(
-    meta
-  );
-
-  row.appendChild(
-    bubble
-  );
+  bubble.appendChild(meta);
+  row.appendChild(bubble);
 
   return row;
-
 }
 
 /* ============================================================
@@ -3570,204 +2589,81 @@ function createMessageElement(msg) {
 ============================================================ */
 
 function createMediaElement(media) {
+  if (!media || !media.url) return null;
 
-  if (
-    !media ||
-    !media.url
-  ) {
-    return null;
-  }
+  const type = media.type || '';
 
-  const type =
-    media.type || '';
+  if (type.startsWith('image/')) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'media-container';
 
-  /*
-    IMAGE
-  */
-  if (
-    type.startsWith('image/')
-  ) {
+    const img = document.createElement('img');
+    img.src = media.url;
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.className = 'media-preview';
+    img.alt = media.name || 'Foto';
 
-    const wrapper =
-      document.createElement('div');
-
-    wrapper.className =
-      'media-container';
-
-    const img =
-      document.createElement('img');
-
-    img.src =
-      media.url;
-
-    img.loading =
-      'lazy';
-
-    img.decoding =
-      'async';
-
-    img.className =
-      'media-preview';
-
-    img.alt =
-      media.name || 'Foto';
-
-    img.onclick =
-      function() {
-
-        openImageModal(
-          media.url,
-          media.name
-        );
-
-      };
-
-    wrapper.appendChild(
-      img
-    );
-
-    return wrapper;
-
-  }
-
-  /*
-    VIDEO
-  */
-  if (
-    type.startsWith('video/')
-  ) {
-
-    const wrapper =
-      document.createElement('div');
-
-    wrapper.className =
-      'media-container';
-
-    const video =
-      document.createElement('video');
-
-    video.src =
-      media.url;
-
-    video.controls =
-      true;
-
-    video.preload =
-      'none';
-
-    video.className =
-      'media-video';
-
-    video.playsInline =
-      true;
-
-    wrapper.appendChild(
-      video
-    );
-
-    return wrapper;
-
-  }
-
-  /*
-    AUDIO
-  */
-  if (
-    type.startsWith('audio/')
-  ) {
-
-    const wrapper =
-      document.createElement('div');
-
-    wrapper.style.marginTop =
-      '4px';
-
-    const audio =
-      document.createElement('audio');
-
-    audio.src =
-      media.url;
-
-    audio.controls =
-      true;
-
-    audio.preload =
-      'none';
-
-    audio.className =
-      'audio-player';
-
-    wrapper.appendChild(
-      audio
-    );
-
-    return wrapper;
-
-  }
-
-  /*
-    FILE / DOCUMENT
-  */
-
-  const wrapper =
-    document.createElement('div');
-
-  wrapper.style.marginTop =
-    '4px';
-
-  wrapper.style.marginBottom =
-    '4px';
-
-  const button =
-    document.createElement('button');
-
-  button.style.background =
-    'transparent';
-
-  button.style.border =
-    'none';
-
-  button.style.color =
-    '#00a884';
-
-  button.style.cursor =
-    'pointer';
-
-  button.style.fontSize =
-    '12px';
-
-  const icon =
-    document.createElement('i');
-
-  icon.className =
-    'fa-solid fa-file-arrow-down';
-
-  button.appendChild(
-    icon
-  );
-
-  button.appendChild(
-    document.createTextNode(
-      ` Unduh ${media.name || 'File'}`
-    )
-  );
-
-  button.onclick =
-    function() {
-
-      downloadBase64(
-        media.url,
-        media.name
-      );
-
+    img.onclick = function() {
+      openImageModal(media.url, media.name);
     };
 
-  wrapper.appendChild(
-    button
-  );
+    wrapper.appendChild(img);
+    return wrapper;
+  }
 
+  if (type.startsWith('video/')) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'media-container';
+
+    const video = document.createElement('video');
+    video.src = media.url;
+    video.controls = true;
+    video.preload = 'none';
+    video.className = 'media-video';
+    video.playsInline = true;
+
+    wrapper.appendChild(video);
+    return wrapper;
+  }
+
+  if (type.startsWith('audio/')) {
+    const wrapper = document.createElement('div');
+    wrapper.style.marginTop = '4px';
+
+    const audio = document.createElement('audio');
+    audio.src = media.url;
+    audio.controls = true;
+    audio.preload = 'none';
+    audio.className = 'audio-player';
+
+    wrapper.appendChild(audio);
+    return wrapper;
+  }
+
+  const wrapper = document.createElement('div');
+  wrapper.style.marginTop = '4px';
+  wrapper.style.marginBottom = '4px';
+
+  const button = document.createElement('button');
+  button.style.background = 'transparent';
+  button.style.border = 'none';
+  button.style.color = '#00a884';
+  button.style.cursor = 'pointer';
+  button.style.fontSize = '12px';
+
+  const icon = document.createElement('i');
+  icon.className = 'fa-solid fa-file-arrow-down';
+
+  button.appendChild(icon);
+  button.appendChild(document.createTextNode(` Unduh ${media.name || 'File'}`));
+
+  button.onclick = function() {
+    downloadBase64(media.url, media.name);
+  };
+
+  wrapper.appendChild(button);
   return wrapper;
-
 }
 
 /* ============================================================
@@ -3775,205 +2671,80 @@ function createMediaElement(media) {
 ============================================================ */
 
 async function openPeekChatModal() {
+  const modal = document.getElementById('peekChatModal');
+  const container = document.getElementById('peekMessagesContainer');
 
-  const modal =
-    document.getElementById(
-      'peekChatModal'
-    );
-
-  const container =
-    document.getElementById(
-      'peekMessagesContainer'
-    );
-
-  modal.style.display =
-    'flex';
-
-  container.innerHTML =
-    `
-      <div class="chat-placeholder">
-        <span class="loading-spinner"></span>
-        Memuat chat...
-      </div>
-    `;
+  modal.style.display = 'flex';
+  container.innerHTML = `
+    <div class="chat-placeholder">
+      <span class="loading-spinner"></span>
+      Memuat chat...
+    </div>
+  `;
 
   try {
-
-    /*
-      Admin tetap mendapatkan seluruh chat
-      saat benar-benar meminta mode intip.
-      Jadi tidak membebani halaman utama.
-    */
-    const snapshot =
-      await db
-        .ref('chats')
-        .once('value');
-
-    const data =
-      snapshot.val();
-
-    container.innerHTML =
-      '';
+    const snapshot = await db.ref('chats').once('value');
+    const data = snapshot.val();
+    container.innerHTML = '';
 
     if (!data) {
-
-      container.innerHTML =
-        `
-          <div class="chat-placeholder">
-            Tidak ada riwayat chat.
-          </div>
-        `;
-
+      container.innerHTML = `<div class="chat-placeholder">Tidak ada riwayat chat.</div>`;
       return;
-
     }
 
-    const messages =
-      Object.values(data)
-        .sort(
-          (a,b) =>
-            (a.timestamp || 0) -
-            (b.timestamp || 0)
-        );
-
-    messages.forEach(
-      function(msg) {
-
-        const isPapah =
-          msg.sender === 'papah';
-
-        const row =
-          document.createElement('div');
-
-        row.className =
-          `message-row ${
-            isPapah
-              ? 'sent'
-              : 'received'
-          }`;
-
-        const sender =
-          document.createElement('span');
-
-        sender.className =
-          'sender-label';
-
-        sender.innerText =
-          isPapah
-            ? 'Papah 💙'
-            : 'Mamah ❤️';
-
-        const bubble =
-          document.createElement('div');
-
-        bubble.className =
-          'bubble';
-
-        if (msg.text) {
-
-          bubble.appendChild(
-            document.createTextNode(
-              msg.text
-            )
-          );
-
-        }
-
-        if (msg.media) {
-
-          const media =
-            createMediaElement(
-              msg.media
-            );
-
-          if (media) {
-
-            bubble.appendChild(
-              media
-            );
-
-          }
-
-        }
-
-        const meta =
-          document.createElement('span');
-
-        meta.className =
-          'msg-meta';
-
-        meta.appendChild(
-          document.createTextNode(
-            `${formatMessageTime(msg.timestamp)} WITA`
-          )
-        );
-
-        const tick =
-          document.createElement('i');
-
-        tick.className =
-          `fa-solid fa-check-double tick ${
-            msg.status === 'read'
-              ? 'read'
-              : ''
-          }`;
-
-        meta.appendChild(
-          tick
-        );
-
-        bubble.appendChild(
-          meta
-        );
-
-        row.appendChild(
-          sender
-        );
-
-        row.appendChild(
-          bubble
-        );
-
-        container.appendChild(
-          row
-        );
-
-      }
+    const messages = Object.values(data).sort(
+      (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
     );
 
-    requestAnimationFrame(
-      function() {
+    messages.forEach(function(msg) {
+      const isPapah = msg.sender === 'papah';
+      const row = document.createElement('div');
+      row.className = `message-row ${isPapah ? 'sent' : 'received'}`;
 
-        container.scrollTop =
-          container.scrollHeight;
+      const sender = document.createElement('span');
+      sender.className = 'sender-label';
+      sender.innerText = isPapah ? 'Papah 💙' : 'Mamah ❤️';
 
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+
+      if (msg.text) {
+        bubble.appendChild(document.createTextNode(msg.text));
       }
-    );
 
+      if (msg.media) {
+        const media = createMediaElement(msg.media);
+        if (media) bubble.appendChild(media);
+      }
+
+      const meta = document.createElement('span');
+      meta.className = 'msg-meta';
+      meta.appendChild(
+        document.createTextNode(`${formatMessageTime(msg.timestamp)} WITA`)
+      );
+
+      const tick = document.createElement('i');
+      tick.className = `fa-solid fa-check-double tick ${msg.status === 'read' ? 'read' : ''}`;
+      meta.appendChild(tick);
+
+      bubble.appendChild(meta);
+      row.appendChild(sender);
+      row.appendChild(bubble);
+
+      container.appendChild(row);
+    });
+
+    requestAnimationFrame(function() {
+      container.scrollTop = container.scrollHeight;
+    });
   } catch (error) {
-
     console.error(error);
-
-    container.innerHTML =
-      `
-        <div class="chat-placeholder">
-          ❌ Gagal memuat chat.
-        </div>
-      `;
-
+    container.innerHTML = `<div class="chat-placeholder">❌ Gagal memuat chat.</div>`;
   }
-
 }
 
 function closePeekChatModal() {
-
-  document
-    .getElementById(
-      'peekChatModal'
-    )
-    .style.display =
-    'none';
-
+  document.getElementById('peekChatModal').style.display = 'none';
 }
 
 /* ============================================================
@@ -3981,129 +2752,55 @@ function closePeekChatModal() {
 ============================================================ */
 
 async function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-  const file =
-    event.target.files[0];
-
-  if (!file) {
+  if (file.size > MAX_FILE_SIZE) {
+    showToast('⚠️ Ukuran file maksimal 10MB!');
+    event.target.value = '';
     return;
-  }
-
-  if (
-    file.size > MAX_FILE_SIZE
-  ) {
-
-    showToast(
-      '⚠️ Ukuran file maksimal 10MB!'
-    );
-
-    event.target.value =
-      '';
-
-    return;
-
   }
 
   try {
-
-    /*
-      Gambar dikompres.
-      File lain tetap dipertahankan.
-    */
-    if (
-      file.type &&
-      file.type.startsWith('image/')
-    ) {
-
-      showToast(
-        '⏳ Mengompres foto...'
+    if (file.type && file.type.startsWith('image/')) {
+      showToast('⏳ Mengompres foto...');
+      const compressed = await compressImage(
+        file,
+        IMAGE_MAX_WIDTH,
+        IMAGE_MAX_HEIGHT,
+        IMAGE_QUALITY
       );
 
-      const compressed =
-        await compressImage(
-          file,
-          IMAGE_MAX_WIDTH,
-          IMAGE_MAX_HEIGHT,
-          IMAGE_QUALITY
-        );
-
+      /* PERBAIKAN: Pastikan jenis MIME selalu terisi lengkap */
       const mediaObj = {
-
-        name:
-          file.name,
-
-        type:
-          compressed.type,
-
-        size:
-          compressed.blob.size,
-
-        url:
-          compressed.dataUrl
-
+        name: file.name,
+        type: compressed.type || file.type || 'image/jpeg',
+        size: compressed.blob.size,
+        url: compressed.dataUrl
       };
 
-      await sendMessage(
-        mediaObj
-      );
-
-      showToast(
-        `✅ Foto terkirim (${formatBytes(compressed.blob.size)})`
-      );
-
+      await sendMessage(mediaObj);
+      showToast(`✅ Foto terkirim (${formatBytes(compressed.blob.size)})`);
     } else {
-
-      showToast(
-        '⏳ Memproses file...'
-      );
-
-      const dataUrl =
-        await fileToDataURL(
-          file
-        );
+      showToast('⏳ Memproses file...');
+      const dataUrl = await fileToDataURL(file);
 
       const mediaObj = {
-
-        name:
-          file.name,
-
-        type:
-          file.type ||
-          'application/octet-stream',
-
-        size:
-          file.size,
-
-        url:
-          dataUrl
-
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        url: dataUrl
       };
 
-      await sendMessage(
-        mediaObj
-      );
-
-      showToast(
-        '✅ File terkirim!'
-      );
-
+      await sendMessage(mediaObj);
+      showToast('✅ File terkirim!');
     }
-
   } catch (error) {
-
     console.error(error);
-
-    showToast(
-      '❌ Gagal memproses file.'
-    );
-
+    showToast('❌ Gagal memproses file.');
   } finally {
-
-    event.target.value =
-      '';
-
+    event.target.value = '';
   }
-
 }
 
 /* ============================================================
@@ -4111,202 +2808,71 @@ async function handleFileUpload(event) {
 ============================================================ */
 
 function fileToDataURL(file) {
-
-  return new Promise(
-    function(resolve,reject) {
-
-      const reader =
-        new FileReader();
-
-      reader.onload =
-        function(e) {
-
-          resolve(
-            e.target.result
-          );
-
-        };
-
-      reader.onerror =
-        function() {
-
-          reject(
-            new Error(
-              'File gagal dibaca.'
-            )
-          );
-
-        };
-
-      reader.readAsDataURL(
-        file
-      );
-
-    }
-  );
-
+  return new Promise(function(resolve, reject) {
+    const reader = new FileReader();
+    reader.onload = function(e) { resolve(e.target.result); };
+    reader.onerror = function() { reject(new Error('File gagal dibaca.')); };
+    reader.readAsDataURL(file);
+  });
 }
 
 /* ============================================================
    IMAGE COMPRESSION
 ============================================================ */
 
-function compressImage(
-  file,
-  maxWidth,
-  maxHeight,
-  quality
-) {
+function compressImage(file, maxWidth, maxHeight, quality) {
+  return new Promise(function(resolve, reject) {
+    const reader = new FileReader();
 
-  return new Promise(
-    function(resolve,reject) {
+    reader.onload = function(event) {
+      const img = new Image();
 
-      const reader =
-        new FileReader();
+      img.onload = function() {
+        let width = img.width;
+        let height = img.height;
 
-      reader.onload =
-        function(event) {
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
 
-          const img =
-            new Image();
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
 
-          img.onload =
-            function() {
+        const ctx = canvas.getContext('2d', { alpha: true });
+        ctx.drawImage(img, 0, 0, width, height);
 
-              let width =
-                img.width;
+        const mime = 'image/jpeg';
+        const dataUrl = canvas.toDataURL(mime, quality);
 
-              let height =
-                img.height;
+        const base64 = dataUrl.split(',')[1] || '';
+        const binaryLength = Math.ceil(base64.length * 0.75);
+        const blob = dataURLToBlob(dataUrl);
 
-              /*
-                Resize proporsional.
-              */
-              if (
-                width > maxWidth ||
-                height > maxHeight
-              ) {
+        /* PERBAIKAN: Masukkan properti 'type' agar MIME type tidak hilang */
+        resolve({
+          dataUrl: dataUrl,
+          blob: blob,
+          type: mime,
+          estimatedSize: binaryLength
+        });
+      };
 
-                const ratio =
-                  Math.min(
-                    maxWidth / width,
-                    maxHeight / height
-                  );
+      img.onerror = function() {
+        reject(new Error('Gambar tidak dapat diproses.'));
+      };
 
-                width =
-                  Math.round(
-                    width * ratio
-                  );
+      img.src = event.target.result;
+    };
 
-                height =
-                  Math.round(
-                    height * ratio
-                  );
+    reader.onerror = function() {
+      reject(new Error('Gambar gagal dibaca.'));
+    };
 
-              }
-
-              const canvas =
-                document.createElement(
-                  'canvas'
-                );
-
-              canvas.width =
-                width;
-
-              canvas.height =
-                height;
-
-              const ctx =
-                canvas.getContext(
-                  '2d',
-                  {
-                    alpha:true
-                  }
-                );
-
-              ctx.drawImage(
-                img,
-                0,
-                0,
-                width,
-                height
-              );
-
-              /*
-                JPEG lebih kecil untuk foto.
-              */
-              const mime =
-                'image/jpeg';
-
-              const dataUrl =
-                canvas.toDataURL(
-                  mime,
-                  quality
-                );
-
-              /*
-                Hitung ukuran hasil.
-              */
-              const base64 =
-                dataUrl.split(',')[1] || '';
-
-              const binaryLength =
-                Math.ceil(
-                  base64.length * 0.75
-                );
-
-              const blob =
-                dataURLToBlob(
-                  dataUrl
-                );
-
-              resolve({
-
-                dataUrl:dataUrl,
-
-                blob:blob,
-
-                estimatedSize:
-                  binaryLength
-
-              });
-
-            };
-
-          img.onerror =
-            function() {
-
-              reject(
-                new Error(
-                  'Gambar tidak dapat diproses.'
-                )
-              );
-
-            };
-
-          img.src =
-            event.target.result;
-
-        };
-
-      reader.onerror =
-        function() {
-
-          reject(
-            new Error(
-              'Gambar gagal dibaca.'
-            )
-          );
-
-        };
-
-      reader.readAsDataURL(
-        file
-      );
-
-    }
-  );
-
+    reader.readAsDataURL(file);
+  });
 }
 
 /* ============================================================
@@ -4314,156 +2880,60 @@ function compressImage(
 ============================================================ */
 
 function dataURLToBlob(dataUrl) {
+  const parts = dataUrl.split(',');
+  const mimeMatch = parts[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+  const binary = atob(parts[1]);
 
-  const parts =
-    dataUrl.split(',');
-
-  const mimeMatch =
-    parts[0].match(
-      /:(.*?);/
-    );
-
-  const mime =
-    mimeMatch
-      ? mimeMatch[1]
-      : 'application/octet-stream';
-
-  const binary =
-    atob(parts[1]);
-
-  const array =
-    new Uint8Array(
-      binary.length
-    );
-
-  for (
-    let i = 0;
-    i < binary.length;
-    i++
-  ) {
-
-    array[i] =
-      binary.charCodeAt(i);
-
+  const array = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    array[i] = binary.charCodeAt(i);
   }
 
-  return new Blob(
-    [array],
-    {
-      type:mime
-    }
-  );
-
+  return new Blob([array], { type: mime });
 }
 
 /* ============================================================
    IMAGE LIGHTBOX
 ============================================================ */
 
-function openImageModal(
-  url,
-  filename
-) {
+function openImageModal(url, filename) {
+  const modal = document.getElementById('imageModal');
+  const img = document.getElementById('lightboxImg');
+  const button = document.getElementById('btnDownloadImg');
 
-  const modal =
-    document.getElementById(
-      'imageModal'
-    );
+  img.src = url;
+  button.onclick = function() {
+    downloadBase64(url, filename);
+  };
 
-  const img =
-    document.getElementById(
-      'lightboxImg'
-    );
-
-  const button =
-    document.getElementById(
-      'btnDownloadImg'
-    );
-
-  img.src =
-    url;
-
-  button.onclick =
-    function() {
-
-      downloadBase64(
-        url,
-        filename
-      );
-
-    };
-
-  modal.style.display =
-    'flex';
-
+  modal.style.display = 'flex';
 }
 
 function closeImageModal() {
+  const modal = document.getElementById('imageModal');
+  const img = document.getElementById('lightboxImg');
 
-  const modal =
-    document.getElementById(
-      'imageModal'
-    );
+  modal.style.display = 'none';
 
-  const img =
-    document.getElementById(
-      'lightboxImg'
-    );
-
-  modal.style.display =
-    'none';
-
-  /*
-    Hapus src agar browser tidak
-    terus mempertahankan gambar besar.
-  */
-  setTimeout(
-    function() {
-
-      img.src =
-        '';
-
-    },
-    100
-  );
-
+  setTimeout(function() {
+    img.src = '';
+  }, 100);
 }
 
 /* ============================================================
    DOWNLOAD
 ============================================================ */
 
-function downloadBase64(
-  url,
-  filename
-) {
+function downloadBase64(url, filename) {
+  if (!url) return;
 
-  if (!url) {
-    return;
-  }
-
-  const a =
-    document.createElement(
-      'a'
-    );
-
-  a.href =
-    url;
-
-  a.download =
-    filename ||
-    'file_download';
-
-  document.body.appendChild(
-    a
-  );
-
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename || 'file_download';
+  document.body.appendChild(a);
   a.click();
-
-  document.body.removeChild(
-    a
-  );
-
+  document.body.removeChild(a);
 }
 
 /* ============================================================
@@ -4471,118 +2941,40 @@ function downloadBase64(
 ============================================================ */
 
 function calculateStorageUsageOptimized() {
-
-  /*
-    Coba gunakan node statistik jika tersedia.
-  */
-  db.ref(
-    'meta/storageBytes'
-  ).on(
-    'value',
-    function(snapshot) {
-
-      const value =
-        snapshot.val();
-
-      if (
-        typeof value === 'number'
-      ) {
-
-        totalStorageBytes =
-          value;
-
-        updateStorageUI();
-
-      } else {
-
-        /*
-          Fallback hanya sekali.
-          Tidak memakai listener.
-        */
-        calculateStorageUsageFallback();
-
-      }
-
+  db.ref('meta/storageBytes').on('value', function(snapshot) {
+    const value = snapshot.val();
+    if (typeof value === 'number') {
+      totalStorageBytes = value;
+      updateStorageUI();
+    } else {
+      calculateStorageUsageFallback();
     }
-  );
-
+  });
 }
 
 function calculateStorageUsageFallback() {
-
-  db.ref('chats')
-    .once(
-      'value',
-      function(snapshot) {
-
-        let bytes = 0;
-
-        const data =
-          snapshot.val();
-
-        if (data) {
-
-          const json =
-            JSON.stringify(
-              data
-            );
-
-          bytes =
-            new Blob(
-              [json]
-            ).size;
-
-        }
-
-        totalStorageBytes =
-          bytes;
-
-        updateStorageUI();
-
-      }
-    );
-
+  db.ref('chats').once('value', function(snapshot) {
+    let bytes = 0;
+    const data = snapshot.val();
+    if (data) {
+      const json = JSON.stringify(data);
+      bytes = new Blob([json]).size;
+    }
+    totalStorageBytes = bytes;
+    updateStorageUI();
+  });
 }
 
 function updateStorageUI() {
+  const mbUsed = totalStorageBytes / (1024 * 1024);
+  const limitMB = 1024;
+  const pct = Math.min((mbUsed / limitMB) * 100, 100);
 
-  const mbUsed =
-    totalStorageBytes /
-    (1024 * 1024);
+  const text = document.getElementById('storageUsedText');
+  const progress = document.getElementById('storageProgress');
 
-  const limitMB =
-    1024;
-
-  const pct =
-    Math.min(
-      (mbUsed / limitMB) * 100,
-      100
-    );
-
-  const text =
-    document.getElementById(
-      'storageUsedText'
-    );
-
-  const progress =
-    document.getElementById(
-      'storageProgress'
-    );
-
-  if (text) {
-
-    text.innerText =
-      `${mbUsed.toFixed(2)} MB`;
-
-  }
-
-  if (progress) {
-
-    progress.style.width =
-      `${pct.toFixed(1)}%`;
-
-  }
-
+  if (text) text.innerText = `${mbUsed.toFixed(2)} MB`;
+  if (progress) progress.style.width = `${pct.toFixed(1)}%`;
 }
 
 /* ============================================================
@@ -4590,404 +2982,133 @@ function updateStorageUI() {
 ============================================================ */
 
 function openAdminDashboard() {
+  currentUser = 'admin';
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('adminModal').style.display = 'flex';
 
-  currentUser =
-    'admin';
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Makassar',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(now);
 
-  document.getElementById(
-    'lockScreen'
-  ).style.display =
-    'none';
+  let yyyy = '', mm = '', dd = '';
+  parts.forEach(function(part) {
+    if (part.type === 'year') yyyy = part.value;
+    if (part.type === 'month') mm = part.value;
+    if (part.type === 'day') dd = part.value;
+  });
 
-  document.getElementById(
-    'adminModal'
-  ).style.display =
-    'flex';
-
-  /*
-    Tanggal WITA.
-  */
-  const now =
-    new Date();
-
-  const parts =
-    new Intl.DateTimeFormat(
-      'en-CA',
-      {
-        timeZone:'Asia/Makassar',
-        year:'numeric',
-        month:'2-digit',
-        day:'2-digit'
-      }
-    ).formatToParts(now);
-
-  let yyyy = '';
-  let mm = '';
-  let dd = '';
-
-  parts.forEach(
-    function(part) {
-
-      if (part.type === 'year') {
-        yyyy = part.value;
-      }
-
-      if (part.type === 'month') {
-        mm = part.value;
-      }
-
-      if (part.type === 'day') {
-        dd = part.value;
-      }
-
-    }
-  );
-
-  document.getElementById(
-    'analyticsDatePicker'
-  ).value =
-    `${yyyy}-${mm}-${dd}`;
+  document.getElementById('analyticsDatePicker').value = `${yyyy}-${mm}-${dd}`;
 
   listenAvatars();
-
   loadAdminMediaList();
-
   loadAnalyticsData();
-
 }
-
-/* ============================================================
-   CLOSE ADMIN
-============================================================ */
 
 function closeAdminModal() {
-
-  /*
-    Reload membersihkan listener Firebase
-    agar tidak menumpuk.
-  */
   location.reload();
-
 }
 
-/* ============================================================
-   ANALYTICS USER
-============================================================ */
-
-function switchAnalyticsUser(
-  user
-) {
-
-  analyticsSelectedUser =
-    user;
-
-  document
-    .getElementById(
-      'tabPapahBtn'
-    )
-    .classList.toggle(
-      'active',
-      user === 'papah'
-    );
-
-  document
-    .getElementById(
-      'tabMamahBtn'
-    )
-    .classList.toggle(
-      'active',
-      user === 'mamah'
-    );
-
+function switchAnalyticsUser(user) {
+  analyticsSelectedUser = user;
+  document.getElementById('tabPapahBtn').classList.toggle('active', user === 'papah');
+  document.getElementById('tabMamahBtn').classList.toggle('active', user === 'mamah');
   loadAnalyticsData();
-
 }
-
-/* ============================================================
-   ANALYTICS DATA
-============================================================ */
 
 function loadAnalyticsData() {
+  db.ref(`analytics/sessions/${analyticsSelectedUser}`).once('value', function(snapshot) {
+    const data = snapshot.val() || {};
+    cachedUserSessions = Object.values(data);
 
-  db.ref(
-    `analytics/sessions/${analyticsSelectedUser}`
-  ).once(
-    'value',
-    function(snapshot) {
+    const now = new Date();
+    const todayParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Makassar',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(now);
 
-      const data =
-        snapshot.val() || {};
+    let currentYear = '', currentMonth = '', currentDay = '';
+    todayParts.forEach(function(part) {
+      if (part.type === 'year') currentYear = part.value;
+      if (part.type === 'month') currentMonth = part.value;
+      if (part.type === 'day') currentDay = part.value;
+    });
 
-      cachedUserSessions =
-        Object.values(
-          data
-        );
+    const todayStr = `${currentYear}-${currentMonth}-${currentDay}`;
 
-      const now =
-        new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
 
-      /*
-        Hari WITA.
-      */
-      const todayParts =
-        new Intl.DateTimeFormat(
-          'en-CA',
-          {
-            timeZone:'Asia/Makassar',
-            year:'numeric',
-            month:'2-digit',
-            day:'2-digit'
-          }
-        ).formatToParts(now);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      let currentYear = '';
-      let currentMonth = '';
-      let currentDay = '';
+    let todayCount = 0, weekCount = 0, monthCount = 0, totalDuration = 0;
+    const daysActiveSet = new Set();
+    const hourlyCounts = new Array(24).fill(0);
 
-      todayParts.forEach(
-        function(part) {
+    cachedUserSessions.forEach(function(sess) {
+      if (!sess.startTime) return;
 
-          if (part.type === 'year') {
-            currentYear =
-              part.value;
-          }
+      const sDate = new Date(sess.startTime);
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Makassar',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).formatToParts(sDate);
 
-          if (part.type === 'month') {
-            currentMonth =
-              part.value;
-          }
+      let y = '', m = '', d = '';
+      parts.forEach(function(part) {
+        if (part.type === 'year') y = part.value;
+        if (part.type === 'month') m = part.value;
+        if (part.type === 'day') d = part.value;
+      });
 
-          if (part.type === 'day') {
-            currentDay =
-              part.value;
-          }
+      const dateStr = `${y}-${m}-${d}`;
 
-        }
-      );
+      if (dateStr === todayStr) todayCount++;
+      if (sDate >= startOfWeek) weekCount++;
+      if (sDate >= startOfMonth) monthCount++;
 
-      const todayStr =
-        `${currentYear}-${currentMonth}-${currentDay}`;
+      const dur = sess.durationSeconds || 0;
+      totalDuration += dur;
+      daysActiveSet.add(dateStr);
 
-      /*
-        Start week/month menggunakan
-        waktu lokal server/browser.
-      */
-      const startOfWeek =
-        new Date(now);
+      const hourParts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Makassar',
+        hour: 'numeric',
+        hour12: false
+      }).formatToParts(sDate);
 
-      startOfWeek.setDate(
-        now.getDate() -
-        now.getDay()
-      );
+      let hour = parseInt(hourParts.find(p => p.type === 'hour')?.value || '0', 10);
+      if (hour === 24) hour = 0;
 
-      startOfWeek.setHours(
-        0,
-        0,
-        0,
-        0
-      );
+      if (hour >= 0 && hour <= 23) {
+        hourlyCounts[hour]++;
+      }
+    });
 
-      const startOfMonth =
-        new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          1
-        );
+    document.getElementById('statToday').innerText = `${todayCount}x`;
+    document.getElementById('statWeek').innerText = `${weekCount}x`;
+    document.getElementById('statMonth').innerText = `${monthCount}x`;
 
-      let todayCount = 0;
-      let weekCount = 0;
-      let monthCount = 0;
+    const totalDays = daysActiveSet.size || 1;
+    const avgMinutes = Math.round((totalDuration / 60) / totalDays);
 
-      let totalDuration = 0;
+    document.getElementById('statAvgActive').innerText =
+      avgMinutes > 60 ? `${(avgMinutes / 60).toFixed(1)} jam` : `${avgMinutes} mnt`;
 
-      const daysActiveSet =
-        new Set();
+    loadChartJS(function() {
+      renderHourlyChart(hourlyCounts);
+    });
 
-      const hourlyCounts =
-        new Array(24).fill(0);
-
-      cachedUserSessions.forEach(
-        function(sess) {
-
-          if (!sess.startTime) {
-            return;
-          }
-
-          const sDate =
-            new Date(
-              sess.startTime
-            );
-
-          const parts =
-            new Intl.DateTimeFormat(
-              'en-CA',
-              {
-                timeZone:'Asia/Makassar',
-                year:'numeric',
-                month:'2-digit',
-                day:'2-digit'
-              }
-            ).formatToParts(
-              sDate
-            );
-
-          let y = '';
-          let m = '';
-          let d = '';
-
-          parts.forEach(
-            function(part) {
-
-              if (part.type === 'year') {
-                y = part.value;
-              }
-
-              if (part.type === 'month') {
-                m = part.value;
-              }
-
-              if (part.type === 'day') {
-                d = part.value;
-              }
-
-            }
-          );
-
-          const dateStr =
-            `${y}-${m}-${d}`;
-
-          if (
-            dateStr ===
-            todayStr
-          ) {
-
-            todayCount++;
-
-          }
-
-          if (
-            sDate >=
-            startOfWeek
-          ) {
-
-            weekCount++;
-
-          }
-
-          if (
-            sDate >=
-            startOfMonth
-          ) {
-
-            monthCount++;
-
-          }
-
-          const dur =
-            sess.durationSeconds ||
-            0;
-
-          totalDuration +=
-            dur;
-
-          daysActiveSet.add(
-            dateStr
-          );
-
-          /*
-            Jam WITA.
-          */
-          const hourParts =
-            new Intl.DateTimeFormat(
-              'en-US',
-              {
-                timeZone:
-                  'Asia/Makassar',
-                hour:'numeric',
-                hour12:false
-              }
-            ).formatToParts(
-              sDate
-            );
-
-          let hour =
-            parseInt(
-              hourParts.find(
-                p =>
-                  p.type === 'hour'
-              )?.value || '0',
-              10
-            );
-
-          if (
-            hour === 24
-          ) {
-            hour = 0;
-          }
-
-          if (
-            hour >= 0 &&
-            hour <= 23
-          ) {
-
-            hourlyCounts[hour]++;
-
-          }
-
-        }
-      );
-
-      document.getElementById(
-        'statToday'
-      ).innerText =
-        `${todayCount}x`;
-
-      document.getElementById(
-        'statWeek'
-      ).innerText =
-        `${weekCount}x`;
-
-      document.getElementById(
-        'statMonth'
-      ).innerText =
-        `${monthCount}x`;
-
-      const totalDays =
-        daysActiveSet.size ||
-        1;
-
-      const avgMinutes =
-        Math.round(
-          (totalDuration / 60) /
-          totalDays
-        );
-
-      document.getElementById(
-        'statAvgActive'
-      ).innerText =
-        avgMinutes > 60
-          ? `${(avgMinutes / 60).toFixed(1)} jam`
-          : `${avgMinutes} mnt`;
-
-      /*
-        Chart dimuat hanya ketika
-        admin benar-benar membukanya.
-      */
-      loadChartJS(
-        function() {
-
-          renderHourlyChart(
-            hourlyCounts
-          );
-
-        }
-      );
-
-      loadTimelineData();
-
-    }
-  );
-
+    loadTimelineData();
+  });
 }
 
 /* ============================================================
@@ -4997,77 +3118,28 @@ function loadAnalyticsData() {
 let chartLoadPromise = null;
 
 function loadChartJS(callback) {
-
-  if (
-    typeof Chart !== 'undefined'
-  ) {
-
+  if (typeof Chart !== 'undefined') {
     callback();
-
     return;
-
   }
 
-  if (
-    chartLoadPromise
-  ) {
-
-    chartLoadPromise.then(
-      callback
-    );
-
+  if (chartLoadPromise) {
+    chartLoadPromise.then(callback);
     return;
-
   }
 
-  chartLoadPromise =
-    new Promise(
-      function(resolve,reject) {
+  chartLoadPromise = new Promise(function(resolve, reject) {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+    script.async = true;
+    script.onload = function() { resolve(); };
+    script.onerror = function() { reject(); };
+    document.head.appendChild(script);
+  });
 
-        const script =
-          document.createElement(
-            'script'
-          );
-
-        script.src =
-          'https://cdn.jsdelivr.net/npm/chart.js';
-
-        script.async =
-          true;
-
-        script.onload =
-          function() {
-
-            resolve();
-
-          };
-
-        script.onerror =
-          function() {
-
-            reject();
-
-          };
-
-        document.head.appendChild(
-          script
-        );
-
-      }
-    );
-
-  chartLoadPromise.then(
-    callback
-  ).catch(
-    function() {
-
-      showToast(
-        '⚠️ Grafik gagal dimuat.'
-      );
-
-    }
-  );
-
+  chartLoadPromise.then(callback).catch(function() {
+    showToast('⚠️ Grafik gagal dimuat.');
+  });
 }
 
 /* ============================================================
@@ -5075,329 +3147,125 @@ function loadChartJS(callback) {
 ============================================================ */
 
 function loadTimelineData() {
-
-  const selectedDateStr =
-    document.getElementById(
-      'analyticsDatePicker'
-    ).value;
-
-  const container =
-    document.getElementById(
-      'timelineList'
-    );
-
-  container.innerHTML =
-    '';
+  const selectedDateStr = document.getElementById('analyticsDatePicker').value;
+  const container = document.getElementById('timelineList');
+  container.innerHTML = '';
 
   if (!selectedDateStr) {
-
-    container.innerHTML =
-      `
-        <div
-          style="font-size:11px;color:var(--text-sub);text-align:center;padding:10px;"
-        >
-          Silakan pilih tanggal.
-        </div>
-      `;
-
+    container.innerHTML = `<div style="font-size:11px;color:var(--text-sub);text-align:center;padding:10px;">Silakan pilih tanggal.</div>`;
     return;
-
   }
 
-  const filteredSessions =
-    cachedUserSessions
-      .filter(
-        function(sess) {
+  const filteredSessions = cachedUserSessions
+    .filter(function(sess) {
+      if (!sess.startTime) return false;
 
-          if (!sess.startTime) {
-            return false;
-          }
+      const date = new Date(sess.startTime);
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Makassar',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).formatToParts(date);
 
-          const date =
-            new Date(
-              sess.startTime
-            );
+      let y = '', m = '', d = '';
+      parts.forEach(function(part) {
+        if (part.type === 'year') y = part.value;
+        if (part.type === 'month') m = part.value;
+        if (part.type === 'day') d = part.value;
+      });
 
-          const parts =
-            new Intl.DateTimeFormat(
-              'en-CA',
-              {
-                timeZone:
-                  'Asia/Makassar',
-                year:'numeric',
-                month:'2-digit',
-                day:'2-digit'
-              }
-            ).formatToParts(
-              date
-            );
+      return `${y}-${m}-${d}` === selectedDateStr;
+    })
+    .sort((a, b) => (b.startTime || 0) - (a.startTime || 0));
 
-          let y = '';
-          let m = '';
-          let d = '';
-
-          parts.forEach(
-            function(part) {
-
-              if (part.type === 'year') {
-                y = part.value;
-              }
-
-              if (part.type === 'month') {
-                m = part.value;
-              }
-
-              if (part.type === 'day') {
-                d = part.value;
-              }
-
-            }
-          );
-
-          return (
-            `${y}-${m}-${d}` ===
-            selectedDateStr
-          );
-
-        }
-      )
-      .sort(
-        (a,b) =>
-          (b.startTime || 0) -
-          (a.startTime || 0)
-      );
-
-  if (
-    filteredSessions.length === 0
-  ) {
-
-    container.innerHTML =
-      `
-        <div
-          style="font-size:11px;color:var(--text-sub);text-align:center;padding:10px;"
-        >
-          Tidak ada aktivitas pada tanggal ini.
-        </div>
-      `;
-
+  if (filteredSessions.length === 0) {
+    container.innerHTML = `<div style="font-size:11px;color:var(--text-sub);text-align:center;padding:10px;">Tidak ada aktivitas pada tanggal ini.</div>`;
     return;
-
   }
 
-  filteredSessions.forEach(
-    function(sess) {
+  filteredSessions.forEach(function(sess) {
+    const date = new Date(sess.startTime);
+    const timeFormatted =
+      new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Makassar',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date) + ' WITA';
 
-      const date =
-        new Date(
-          sess.startTime
-        );
+    const durSec = sess.durationSeconds || 0;
+    let durFormatted = '';
 
-      const timeFormatted =
-        new Intl.DateTimeFormat(
-          'id-ID',
-          {
-            timeZone:
-              'Asia/Makassar',
-            hour:'2-digit',
-            minute:'2-digit'
-          }
-        ).format(date) +
-        ' WITA';
-
-      const durSec =
-        sess.durationSeconds ||
-        0;
-
-      let durFormatted =
-        '';
-
-      if (
-        durSec < 60
-      ) {
-
-        durFormatted =
-          `${durSec} dtk`;
-
-      } else {
-
-        const m =
-          Math.floor(
-            durSec / 60
-          );
-
-        const s =
-          durSec % 60;
-
-        durFormatted =
-          s > 0
-            ? `${m} mnt ${s} dtk`
-            : `${m} mnt`;
-
-      }
-
-      const item =
-        document.createElement(
-          'div'
-        );
-
-      item.className =
-        'timeline-item';
-
-      item.innerHTML =
-        `
-          <div class="timeline-time">
-            <i
-              class="fa-solid fa-mobile-screen-button"
-              style="color:var(--primary);"
-            ></i>
-            Dibuka jam ${escapeHtml(timeFormatted)}
-          </div>
-
-          <div class="timeline-duration">
-            Aktif: ${escapeHtml(durFormatted)}
-          </div>
-        `;
-
-      container.appendChild(
-        item
-      );
-
+    if (durSec < 60) {
+      durFormatted = `${durSec} dtk`;
+    } else {
+      const m = Math.floor(durSec / 60);
+      const s = durSec % 60;
+      durFormatted = s > 0 ? `${m} mnt ${s} dtk` : `${m} mnt`;
     }
-  );
 
+    const item = document.createElement('div');
+    item.className = 'timeline-item';
+    item.innerHTML = `
+      <div class="timeline-time">
+        <i class="fa-solid fa-mobile-screen-button" style="color:var(--primary);"></i>
+        Dibuka jam ${escapeHtml(timeFormatted)}
+      </div>
+      <div class="timeline-duration">
+        Aktif: ${escapeHtml(durFormatted)}
+      </div>
+    `;
+
+    container.appendChild(item);
+  });
 }
 
 /* ============================================================
    HOURLY CHART
 ============================================================ */
 
-function renderHourlyChart(
-  hourlyCounts
-) {
+function renderHourlyChart(hourlyCounts) {
+  if (typeof Chart === 'undefined') return;
 
-  if (
-    typeof Chart === 'undefined'
-  ) {
-    return;
-  }
+  const canvas = document.getElementById('hourlyChart');
+  if (!canvas) return;
 
-  const canvas =
-    document.getElementById(
-      'hourlyChart'
-    );
+  const ctx = canvas.getContext('2d');
+  const labels = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
 
-  if (!canvas) {
-    return;
-  }
-
-  const ctx =
-    canvas.getContext(
-      '2d'
-    );
-
-  const labels =
-    Array.from(
-      {
-        length:24
-      },
-      (_,i) =>
-        `${String(i).padStart(2,'0')}:00`
-    );
-
-  if (
-    hourlyChartInstance
-  ) {
-
+  if (hourlyChartInstance) {
     hourlyChartInstance.destroy();
-
   }
 
-  hourlyChartInstance =
-    new Chart(
-      ctx,
-      {
-        type:'bar',
-
-        data:{
-
-          labels:labels,
-
-          datasets:[{
-
-            label:
-              'Frekuensi Buka',
-
-            data:
-              hourlyCounts,
-
-            backgroundColor:
-              '#00a884',
-
-            borderRadius:4
-
-          }]
-
+  hourlyChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Frekuensi Buka',
+        data: hourlyCounts,
+        backgroundColor: '#00a884',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: { color: '#8696a0', font: { size: 9 } },
+          grid: { display: false }
         },
-
-        options:{
-
-          responsive:true,
-
-          maintainAspectRatio:false,
-
-          animation:false,
-
-          plugins:{
-
-            legend:{
-              display:false
-            }
-
-          },
-
-          scales:{
-
-            x:{
-
-              ticks:{
-                color:'#8696a0',
-                font:{
-                  size:9
-                }
-              },
-
-              grid:{
-                display:false
-              }
-
-            },
-
-            y:{
-
-              beginAtZero:true,
-
-              ticks:{
-                color:'#8696a0',
-                font:{
-                  size:9
-                },
-                stepSize:1
-              },
-
-              grid:{
-                color:
-                  'rgba(255,255,255,.05)'
-              }
-
-            }
-
-          }
-
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#8696a0', font: { size: 9 }, stepSize: 1 },
+          grid: { color: 'rgba(255,255,255,.05)' }
         }
-
       }
-    );
-
+    }
+  });
 }
 
 /* ============================================================
@@ -5405,150 +3273,64 @@ function renderHourlyChart(
 ============================================================ */
 
 function updateAdminAvatarUI() {
+  const pAv = userAvatars.papah;
+  const mAv = userAvatars.mamah;
 
-  const pAv =
-    userAvatars.papah;
-
-  const mAv =
-    userAvatars.mamah;
-
-  const pElement =
-    document.getElementById(
-      'adminPapahAvatar'
-    );
-
-  const mElement =
-    document.getElementById(
-      'adminMamahAvatar'
-    );
+  const pElement = document.getElementById('adminPapahAvatar');
+  const mElement = document.getElementById('adminMamahAvatar');
 
   if (pAv) {
-
-    pElement.innerHTML =
-      '';
-
-    const img =
-      document.createElement(
-        'img'
-      );
-
-    img.src =
-      pAv;
-
-    img.loading =
-      'lazy';
-
-    pElement.appendChild(
-      img
-    );
-
+    pElement.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = pAv;
+    img.loading = 'lazy';
+    pElement.appendChild(img);
   } else {
-
-    pElement.innerHTML =
-      '<i class="fa-solid fa-user-tie"></i>';
-
+    pElement.innerHTML = '<i class="fa-solid fa-user-tie"></i>';
   }
 
   if (mAv) {
-
-    mElement.innerHTML =
-      '';
-
-    const img =
-      document.createElement(
-        'img'
-      );
-
-    img.src =
-      mAv;
-
-    img.loading =
-      'lazy';
-
-    mElement.appendChild(
-      img
-    );
-
+    mElement.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = mAv;
+    img.loading = 'lazy';
+    mElement.appendChild(img);
   } else {
-
-    mElement.innerHTML =
-      '<i class="fa-solid fa-user-nurse"></i>';
-
+    mElement.innerHTML = '<i class="fa-solid fa-user-nurse"></i>';
   }
-
 }
 
 /* ============================================================
    AVATAR UPLOAD
 ============================================================ */
 
-async function uploadAvatar(
-  targetUser,
-  event
-) {
+async function uploadAvatar(targetUser, event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-  const file =
-    event.target.files[0];
-
-  if (!file) {
+  if (file.size > MAX_FILE_SIZE) {
+    showToast('⚠️ Ukuran foto profil maksimal 10MB!');
+    event.target.value = '';
     return;
-  }
-
-  if (
-    file.size >
-    MAX_FILE_SIZE
-  ) {
-
-    showToast(
-      '⚠️ Ukuran foto profil maksimal 10MB!'
-    );
-
-    event.target.value =
-      '';
-
-    return;
-
   }
 
   try {
-
-    showToast(
-      '⏳ Mengompres foto profil...'
+    showToast('⏳ Mengompres foto profil...');
+    const compressed = await compressImage(
+      file,
+      AVATAR_MAX_WIDTH,
+      AVATAR_MAX_HEIGHT,
+      AVATAR_QUALITY
     );
 
-    const compressed =
-      await compressImage(
-        file,
-        AVATAR_MAX_WIDTH,
-        AVATAR_MAX_HEIGHT,
-        AVATAR_QUALITY
-      );
-
-    await db.ref(
-      `avatars/${targetUser}`
-    ).set(
-      compressed.dataUrl
-    );
-
-    showToast(
-      '✅ Foto profil diperbarui!'
-    );
-
+    await db.ref(`avatars/${targetUser}`).set(compressed.dataUrl);
+    showToast('✅ Foto profil diperbarui!');
   } catch (error) {
-
     console.error(error);
-
-    showToast(
-      '❌ Gagal mengunggah foto profil.'
-    );
-
+    showToast('❌ Gagal mengunggah foto profil.');
   } finally {
-
-    event.target.value =
-      '';
-
+    event.target.value = '';
   }
-
 }
 
 /* ============================================================
@@ -5556,411 +3338,134 @@ async function uploadAvatar(
 ============================================================ */
 
 function loadAdminMediaList() {
+  const container = document.getElementById('adminMediaList');
+  container.innerHTML = `
+    <div style="font-size:12px;color:var(--text-sub);text-align:center;">
+      <span class="loading-spinner"></span> Memuat daftar berkas...
+    </div>
+  `;
 
-  const container =
-    document.getElementById(
-      'adminMediaList'
-    );
+  db.ref('chats').once('value', function(snapshot) {
+    container.innerHTML = '';
+    const data = snapshot.val();
 
-  container.innerHTML =
-    `
-      <div
-        style="font-size:12px;color:var(--text-sub);text-align:center;"
-      >
-        <span class="loading-spinner"></span>
-        Memuat daftar berkas...
-      </div>
-    `;
+    if (!data) {
+      container.innerHTML = `<div style="font-size:12px;color:var(--text-sub);text-align:center;">Tidak ada file media.</div>`;
+      return;
+    }
 
-  /*
-    Hanya membaca sekali saat dashboard
-    dibuka, bukan listener permanen.
-  */
-  db.ref('chats')
-    .once(
-      'value',
-      function(snapshot) {
+    let mediaFound = false;
 
-        container.innerHTML =
-          '';
+    Object.values(data)
+      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+      .forEach(function(msg) {
+        if (!msg.media) return;
 
-        const data =
-          snapshot.val();
+        mediaFound = true;
+        const media = msg.media;
+        const sizeMB = ((media.size || 0) / (1024 * 1024)).toFixed(2);
 
-        if (!data) {
+        const row = document.createElement('div');
+        row.className = 'media-item-row';
 
-          container.innerHTML =
-            `
-              <div
-                style="font-size:12px;color:var(--text-sub);text-align:center;"
-              >
-                Tidak ada file media.
-              </div>
-            `;
+        const header = document.createElement('div');
+        header.className = 'media-item-header';
 
-          return;
+        const name = document.createElement('div');
+        name.className = 'media-item-name';
+        name.title = media.name || 'File';
 
+        let iconClass = 'fa-file';
+        if (media.type && media.type.startsWith('image/')) iconClass = 'fa-image';
+        else if (media.type && media.type.startsWith('video/')) iconClass = 'fa-film';
+        else if (media.type && media.type.startsWith('audio/')) iconClass = 'fa-microphone';
+
+        name.innerHTML = `
+          <i class="fa-solid ${iconClass}"></i>
+          ${escapeHtml(media.name || 'File')}
+          (${escapeHtml(sizeMB)} MB)
+        `;
+
+        const deleteButton = document.createElement('button');
+        deleteButton.style.background = 'transparent';
+        deleteButton.style.border = 'none';
+        deleteButton.style.color = 'var(--danger)';
+        deleteButton.style.cursor = 'pointer';
+        deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i>';
+
+        deleteButton.onclick = function() {
+          deleteSingleMedia(msg.id);
+        };
+
+        header.appendChild(name);
+        header.appendChild(deleteButton);
+        row.appendChild(header);
+
+        const preview = document.createElement('div');
+        preview.style.textAlign = 'center';
+        preview.style.marginTop = '4px';
+
+        if (media.type && media.type.startsWith('image/')) {
+          const img = document.createElement('img');
+          img.src = media.url;
+          img.loading = 'lazy';
+          img.className = 'media-preview-admin';
+          img.onclick = function() { openImageModal(media.url, media.name); };
+          preview.appendChild(img);
+        } else if (media.type && media.type.startsWith('video/')) {
+          const video = document.createElement('video');
+          video.src = media.url;
+          video.controls = true;
+          video.preload = 'none';
+          video.className = 'media-preview-admin';
+          preview.appendChild(video);
+        } else if (media.type && media.type.startsWith('audio/')) {
+          const audio = document.createElement('audio');
+          audio.src = media.url;
+          audio.controls = true;
+          audio.preload = 'none';
+          audio.style.width = '100%';
+          audio.style.height = '32px';
+          preview.appendChild(audio);
+        } else {
+          const button = document.createElement('button');
+          button.className = 'btn-action';
+          button.style.padding = '6px 12px';
+          button.style.fontSize = '11px';
+          button.style.width = 'auto';
+          button.innerHTML = `<i class="fa-solid fa-file-arrow-down"></i> Buka / Unduh Dokumen`;
+          button.onclick = function() { downloadBase64(media.url, media.name); };
+          preview.appendChild(button);
         }
 
-        let mediaFound =
-          false;
-
-        Object.values(data)
-          .sort(
-            (a,b) =>
-              (b.timestamp || 0) -
-              (a.timestamp || 0)
-          )
-          .forEach(
-            function(msg) {
-
-              if (!msg.media) {
-                return;
-              }
-
-              mediaFound =
-                true;
-
-              const media =
-                msg.media;
-
-              const sizeMB =
-                (
-                  (media.size || 0) /
-                  (1024 * 1024)
-                ).toFixed(2);
-
-              const row =
-                document.createElement(
-                  'div'
-                );
-
-              row.className =
-                'media-item-row';
-
-              const header =
-                document.createElement(
-                  'div'
-                );
-
-              header.className =
-                'media-item-header';
-
-              const name =
-                document.createElement(
-                  'div'
-                );
-
-              name.className =
-                'media-item-name';
-
-              name.title =
-                media.name ||
-                'File';
-
-              let iconClass =
-                'fa-file';
-
-              if (
-                media.type &&
-                media.type.startsWith('image/')
-              ) {
-
-                iconClass =
-                  'fa-image';
-
-              } else if (
-                media.type &&
-                media.type.startsWith('video/')
-              ) {
-
-                iconClass =
-                  'fa-film';
-
-              } else if (
-                media.type &&
-                media.type.startsWith('audio/')
-              ) {
-
-                iconClass =
-                  'fa-microphone';
-
-              }
-
-              name.innerHTML =
-                `
-                  <i class="fa-solid ${iconClass}"></i>
-                  ${escapeHtml(media.name || 'File')}
-                  (${escapeHtml(sizeMB)} MB)
-                `;
-
-              const deleteButton =
-                document.createElement(
-                  'button'
-                );
-
-              deleteButton.style.background =
-                'transparent';
-
-              deleteButton.style.border =
-                'none';
-
-              deleteButton.style.color =
-                'var(--danger)';
-
-              deleteButton.style.cursor =
-                'pointer';
-
-              deleteButton.innerHTML =
-                '<i class="fa-solid fa-trash"></i>';
-
-              deleteButton.onclick =
-                function() {
-
-                  deleteSingleMedia(
-                    msg.id
-                  );
-
-                };
-
-              header.appendChild(
-                name
-              );
-
-              header.appendChild(
-                deleteButton
-              );
-
-              row.appendChild(
-                header
-              );
-
-              const preview =
-                document.createElement(
-                  'div'
-                );
-
-              preview.style.textAlign =
-                'center';
-
-              preview.style.marginTop =
-                '4px';
-
-              if (
-                media.type &&
-                media.type.startsWith('image/')
-              ) {
-
-                const img =
-                  document.createElement(
-                    'img'
-                  );
-
-                img.src =
-                  media.url;
-
-                img.loading =
-                  'lazy';
-
-                img.className =
-                  'media-preview-admin';
-
-                img.onclick =
-                  function() {
-
-                    openImageModal(
-                      media.url,
-                      media.name
-                    );
-
-                  };
-
-                preview.appendChild(
-                  img
-                );
-
-              } else if (
-                media.type &&
-                media.type.startsWith('video/')
-              ) {
-
-                const video =
-                  document.createElement(
-                    'video'
-                  );
-
-                video.src =
-                  media.url;
-
-                video.controls =
-                  true;
-
-                video.preload =
-                  'none';
-
-                video.className =
-                  'media-preview-admin';
-
-                preview.appendChild(
-                  video
-                );
-
-              } else if (
-                media.type &&
-                media.type.startsWith('audio/')
-              ) {
-
-                const audio =
-                  document.createElement(
-                    'audio'
-                  );
-
-                audio.src =
-                  media.url;
-
-                audio.controls =
-                  true;
-
-                audio.preload =
-                  'none';
-
-                audio.style.width =
-                  '100%';
-
-                audio.style.height =
-                  '32px';
-
-                preview.appendChild(
-                  audio
-                );
-
-              } else {
-
-                const button =
-                  document.createElement(
-                    'button'
-                  );
-
-                button.className =
-                  'btn-action';
-
-                button.style.padding =
-                  '6px 12px';
-
-                button.style.fontSize =
-                  '11px';
-
-                button.style.width =
-                  'auto';
-
-                button.innerHTML =
-                  `
-                    <i class="fa-solid fa-file-arrow-down"></i>
-                    Buka / Unduh Dokumen
-                  `;
-
-                button.onclick =
-                  function() {
-
-                    downloadBase64(
-                      media.url,
-                      media.name
-                    );
-
-                  };
-
-                preview.appendChild(
-                  button
-                );
-
-              }
-
-              row.appendChild(
-                preview
-              );
-
-              container.appendChild(
-                row
-              );
-
-            }
-          );
-
-        if (!mediaFound) {
-
-          container.innerHTML =
-            `
-              <div
-                style="font-size:12px;color:var(--text-sub);text-align:center;"
-              >
-                Tidak ada berkas media tersimpan.
-              </div>
-            `;
-
-        }
-
-      }
-    )
-    .catch(
-      function(error) {
-
-        console.error(error);
-
-        container.innerHTML =
-          `
-            <div
-              style="font-size:12px;color:var(--danger);text-align:center;"
-            >
-              ❌ Gagal memuat media.
-            </div>
-          `;
-
-      }
-    );
-
+        row.appendChild(preview);
+        container.appendChild(row);
+      });
+
+    if (!mediaFound) {
+      container.innerHTML = `<div style="font-size:12px;color:var(--text-sub);text-align:center;">Tidak ada berkas media tersimpan.</div>`;
+    }
+  }).catch(function(error) {
+    console.error(error);
+    container.innerHTML = `<div style="font-size:12px;color:var(--danger);text-align:center;">❌ Gagal memuat media.</div>`;
+  });
 }
 
 /* ============================================================
    DELETE SINGLE MEDIA
 ============================================================ */
 
-function deleteSingleMedia(
-  msgId
-) {
+function deleteSingleMedia(msgId) {
+  if (!confirm('Hapus file media ini dari chat?')) return;
 
-  if (
-    !confirm(
-      'Hapus file media ini dari chat?'
-    )
-  ) {
-    return;
-  }
-
-  db.ref(
-    `chats/${msgId}/media`
-  )
-    .remove()
-    .then(
-      function() {
-
-        showToast(
-          '✅ Media dihapus!'
-        );
-
-        loadAdminMediaList();
-
-      }
-    )
-    .catch(
-      function() {
-
-        showToast(
-          '❌ Gagal menghapus media.'
-        );
-
-      }
-    );
-
+  db.ref(`chats/${msgId}/media`).remove()
+    .then(function() {
+      showToast('✅ Media dihapus!');
+      loadAdminMediaList();
+    })
+    .catch(function() {
+      showToast('❌ Gagal menghapus media.');
+    });
 }
 
 /* ============================================================
@@ -5968,92 +3473,36 @@ function deleteSingleMedia(
 ============================================================ */
 
 function deleteAllMedia() {
+  if (!confirm('Apakah Anda yakin ingin menghapus SELURUH file foto, video, audio dan dokumen dari semua pesan? Teks chat tidak akan terhapus.')) return;
 
-  if (
-    !confirm(
-      'Apakah Anda yakin ingin menghapus SELURUH file foto, video, audio dan dokumen dari semua pesan? Teks chat tidak akan terhapus.'
-    )
-  ) {
-    return;
-  }
+  db.ref('chats').once('value', function(snapshot) {
+    const data = snapshot.val();
+    if (!data) {
+      showToast('Tidak ada media.');
+      return;
+    }
 
-  db.ref('chats')
-    .once(
-      'value',
-      function(snapshot) {
-
-        const data =
-          snapshot.val();
-
-        if (!data) {
-
-          showToast(
-            'Tidak ada media.'
-          );
-
-          return;
-
-        }
-
-        const updates =
-          {};
-
-        Object.keys(data)
-          .forEach(
-            function(key) {
-
-              if (
-                data[key] &&
-                data[key].media
-              ) {
-
-                updates[
-                  `chats/${key}/media`
-                ] = null;
-
-              }
-
-            }
-          );
-
-        if (
-          Object.keys(updates).length === 0
-        ) {
-
-          showToast(
-            'Tidak ada media.'
-          );
-
-          return;
-
-        }
-
-        db.ref()
-          .update(updates)
-          .then(
-            function() {
-
-              showToast(
-                '✅ Semua file media berhasil dibersihkan!'
-              );
-
-              loadAdminMediaList();
-
-            }
-          )
-          .catch(
-            function() {
-
-              showToast(
-                '❌ Gagal membersihkan media.'
-              );
-
-            }
-          );
-
+    const updates = {};
+    Object.keys(data).forEach(function(key) {
+      if (data[key] && data[key].media) {
+        updates[`chats/${key}/media`] = null;
       }
-    );
+    });
 
+    if (Object.keys(updates).length === 0) {
+      showToast('Tidak ada media.');
+      return;
+    }
+
+    db.ref().update(updates)
+      .then(function() {
+        showToast('✅ Semua file media berhasil dibersihkan!');
+        loadAdminMediaList();
+      })
+      .catch(function() {
+        showToast('❌ Gagal membersihkan media.');
+      });
+  });
 }
 
 /* ============================================================
@@ -6061,58 +3510,22 @@ function deleteAllMedia() {
 ============================================================ */
 
 function deleteAllChats() {
+  if (!confirm('⚠️ PERINGATAN: Seluruh riwayat obrolan akan dihapus secara permanen. Lanjutkan?')) return;
 
-  if (
-    !confirm(
-      '⚠️ PERINGATAN: Seluruh riwayat obrolan akan dihapus secara permanen. Lanjutkan?'
-    )
-  ) {
-    return;
-  }
+  db.ref('chats').remove()
+    .then(function() {
+      messageMap.clear();
+      allMessages = [];
+      oldestMessageKey = null;
+      newestMessageKey = null;
+      hasMoreOlderMessages = true;
 
-  db.ref('chats')
-    .remove()
-    .then(
-      function() {
-
-        messageMap.clear();
-
-        allMessages =
-          [];
-
-        oldestMessageKey =
-          null;
-
-        newestMessageKey =
-          null;
-
-        hasMoreOlderMessages =
-          true;
-
-        renderMessages(
-          [],
-          {
-            forceBottom:false,
-            markRead:false
-          }
-        );
-
-        showToast(
-          '✅ Seluruh riwayat chat dibersihkan!'
-        );
-
-      }
-    )
-    .catch(
-      function() {
-
-        showToast(
-          '❌ Gagal menghapus riwayat chat.'
-        );
-
-      }
-    );
-
+      renderMessages([], { forceBottom: false, markRead: false });
+      showToast('✅ Seluruh riwayat chat dibersihkan!');
+    })
+    .catch(function() {
+      showToast('❌ Gagal menghapus riwayat chat.');
+    });
 }
 
 /* ============================================================
@@ -6120,21 +3533,11 @@ function deleteAllChats() {
 ============================================================ */
 
 function openStorageModal() {
-
-  document.getElementById(
-    'storageModal'
-  ).style.display =
-    'flex';
-
+  document.getElementById('storageModal').style.display = 'flex';
 }
 
 function closeStorageModal() {
-
-  document.getElementById(
-    'storageModal'
-  ).style.display =
-    'none';
-
+  document.getElementById('storageModal').style.display = 'none';
 }
 
 /* ============================================================
@@ -6142,21 +3545,10 @@ function closeStorageModal() {
 ============================================================ */
 
 function logout() {
-
   try {
-
-    if (
-      currentSessionRef
-    ) {
-
-      recordAppSessionEnd();
-
-    }
-
+    if (currentSessionRef) recordAppSessionEnd();
   } catch(e) {}
-
   location.reload();
-
 }
 
 /* ============================================================
@@ -6166,39 +3558,15 @@ function logout() {
 let toastTimer = null;
 
 function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.innerText = msg;
+  toast.classList.add('show');
 
-  const toast =
-    document.getElementById(
-      'toast'
-    );
+  if (toastTimer) clearTimeout(toastTimer);
 
-  toast.innerText =
-    msg;
-
-  toast.classList.add(
-    'show'
-  );
-
-  if (toastTimer) {
-
-    clearTimeout(
-      toastTimer
-    );
-
-  }
-
-  toastTimer =
-    setTimeout(
-      function() {
-
-        toast.classList.remove(
-          'show'
-        );
-
-      },
-      2500
-    );
-
+  toastTimer = setTimeout(function() {
+    toast.classList.remove('show');
+  }, 2500);
 }
 
 /* ============================================================
@@ -6206,50 +3574,13 @@ function showToast(msg) {
 ============================================================ */
 
 function formatBytes(bytes) {
+  if (!bytes || bytes <= 0) return '0 KB';
 
-  if (
-    !bytes ||
-    bytes <= 0
-  ) {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const index = Math.floor(Math.log(bytes) / Math.log(1024));
+  const safeIndex = Math.min(index, units.length - 1);
 
-    return '0 KB';
-
-  }
-
-  const units =
-    [
-      'B',
-      'KB',
-      'MB',
-      'GB'
-    ];
-
-  const index =
-    Math.floor(
-      Math.log(bytes) /
-      Math.log(1024)
-    );
-
-  const safeIndex =
-    Math.min(
-      index,
-      units.length - 1
-    );
-
-  return (
-    bytes /
-    Math.pow(
-      1024,
-      safeIndex
-    )
-  ).toFixed(
-    safeIndex === 0
-      ? 0
-      : 2
-  ) +
-  ' ' +
-  units[safeIndex];
-
+  return (bytes / Math.pow(1024, safeIndex)).toFixed(safeIndex === 0 ? 0 : 2) + ' ' + units[safeIndex];
 }
 
 /* ============================================================
@@ -6257,91 +3588,41 @@ function formatBytes(bytes) {
 ============================================================ */
 
 function escapeHtml(value) {
-
-  const div =
-    document.createElement(
-      'div'
-    );
-
-  div.textContent =
-    value == null
-      ? ''
-      : String(value);
-
+  const div = document.createElement('div');
+  div.textContent = value == null ? '' : String(value);
   return div.innerHTML;
-
 }
 
 /* ============================================================
    CLOSE MODAL WHEN CLICK OUTSIDE
 ============================================================ */
 
-document.addEventListener(
-  'click',
-  function(e) {
+document.addEventListener('click', function(e) {
+  const imageModal = document.getElementById('imageModal');
+  if (e.target === imageModal) closeImageModal();
 
-    const imageModal =
-      document.getElementById(
-        'imageModal'
-      );
-
-    if (
-      e.target === imageModal
-    ) {
-
-      closeImageModal();
-
-    }
-
-    const storageModal =
-      document.getElementById(
-        'storageModal'
-      );
-
-    if (
-      e.target === storageModal
-    ) {
-
-      closeStorageModal();
-
-    }
-
-  }
-);
+  const storageModal = document.getElementById('storageModal');
+  if (e.target === storageModal) closeStorageModal();
+});
 
 /* ============================================================
    ESC KEY
 ============================================================ */
 
-document.addEventListener(
-  'keydown',
-  function(e) {
-
-    if (
-      e.key === 'Escape'
-    ) {
-
-      closeImageModal();
-
-      closeStorageModal();
-
-    }
-
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeImageModal();
+    closeStorageModal();
   }
-);
+});
 
 /* ============================================================
    INITIAL UI
 ============================================================ */
 
-document.addEventListener(
-  'DOMContentLoaded',
-  function() {
-
-    toggleActionBtn();
-
-  }
-);
+document.addEventListener('DOMContentLoaded', function() {
+  toggleActionBtn();
+});
 </script>
 
 </body>
