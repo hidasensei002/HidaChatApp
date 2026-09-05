@@ -6,16 +6,13 @@
 
 <title>Papah & Mamah - Private Workspace</title>
 
-<!-- Font dibuat tetap sama agar tampilan tidak berubah -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -54,7 +51,6 @@ body {
   align-items:center;
   overflow:hidden;
   overscroll-behavior:none;
-  overscroll-behavior-y:none;
   touch-action:manipulation;
 }
 
@@ -203,7 +199,6 @@ input[type="password"] {
   font-size:18px;
   color:#fff;
   overflow:hidden;
-  object-fit:cover;
 }
 
 .avatar img {
@@ -409,17 +404,24 @@ input[type="password"] {
   border-top-left-radius:0;
 }
 
+/* Optimasi CLS: Pencegahan layout bergeser saat media dimuat */
 .media-container {
-  margin-top:2px;
+  margin-top:4px;
   margin-bottom:2px;
   border-radius:6px;
   overflow:hidden;
   max-width:270px;
+  min-height:140px;
+  aspect-ratio:16 / 9;
   background:#111b21;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
 .media-preview {
   width:100%;
+  height:100%;
   max-height:280px;
   object-fit:cover;
   display:block;
@@ -429,6 +431,7 @@ input[type="password"] {
 
 .media-video {
   width:100%;
+  height:100%;
   max-height:280px;
   border-radius:6px;
   display:block;
@@ -529,7 +532,7 @@ input[type="password"] {
 }
 
 /* =========================
-   INPUT
+   INPUT & RECORDING UI
 ========================= */
 
 .chat-input-bar {
@@ -583,11 +586,11 @@ input[type="password"] {
 
 @keyframes pulse {
   0% {transform:scale(1)}
-  100% {transform:scale(1.1)}
+  100% {transform:scale(1.08)}
 }
 
 /* =========================
-   STORAGE
+   STORAGE MODAL
 ========================= */
 
 #storageModal {
@@ -634,7 +637,7 @@ input[type="password"] {
 }
 
 /* =========================
-   ADMIN
+   ADMIN DASHBOARD
 ========================= */
 
 #adminModal {
@@ -953,10 +956,6 @@ input[type="password"] {
 
 <body>
 
-<!-- =========================
-     LOCK SCREEN
-========================= -->
-
 <div id="lockScreen" class="overlay-screen">
 
   <div class="modal-box">
@@ -983,10 +982,6 @@ input[type="password"] {
   </div>
 
 </div>
-
-<!-- =========================
-     MAIN APP
-========================= -->
 
 <div class="app-container">
 
@@ -1083,8 +1078,6 @@ input[type="password"] {
 
   </div>
 
-  <!-- SEARCH -->
-
   <div class="search-filter-bar" id="searchBarContainer">
 
     <i
@@ -1109,8 +1102,6 @@ input[type="password"] {
 
   </div>
 
-  <!-- DATE -->
-
   <div class="search-filter-bar" id="dateBarContainer">
 
     <i
@@ -1133,8 +1124,6 @@ input[type="password"] {
     </button>
 
   </div>
-
-  <!-- CATEGORY -->
 
   <div class="search-filter-bar" id="categoryBarContainer">
 
@@ -1160,8 +1149,6 @@ input[type="password"] {
 
   </div>
 
-  <!-- CHAT -->
-
   <div class="chat-messages" id="messagesContainer">
 
     <div class="chat-placeholder">
@@ -1170,8 +1157,6 @@ input[type="password"] {
     </div>
 
   </div>
-
-  <!-- INPUT -->
 
   <div class="chat-input-bar">
 
@@ -1214,10 +1199,6 @@ input[type="password"] {
   </div>
 
 </div>
-
-<!-- =========================
-     STORAGE MODAL
-========================= -->
 
 <div id="storageModal" class="overlay-screen">
 
@@ -1262,10 +1243,6 @@ input[type="password"] {
 
 </div>
 
-<!-- =========================
-     IMAGE MODAL
-========================= -->
-
 <div id="imageModal" class="overlay-screen">
 
   <img
@@ -1298,10 +1275,6 @@ input[type="password"] {
 
 </div>
 
-<!-- =========================
-     ADMIN DASHBOARD
-========================= -->
-
 <div id="adminModal" class="overlay-screen">
 
   <div class="modal-box">
@@ -1322,8 +1295,6 @@ input[type="password"] {
       <i class="fa-solid fa-eye"></i>
       Intip Chat (Tanpa Centang Biru)
     </button>
-
-    <!-- ANALYTICS -->
 
     <div class="admin-section">
 
@@ -1460,8 +1431,6 @@ input[type="password"] {
 
     </div>
 
-    <!-- AVATAR -->
-
     <div class="admin-section">
 
       <h3>
@@ -1537,8 +1506,6 @@ input[type="password"] {
 
     </div>
 
-    <!-- MEDIA -->
-
     <div class="admin-section">
 
       <h3>
@@ -1574,8 +1541,6 @@ input[type="password"] {
 
     </div>
 
-    <!-- DELETE CHAT -->
-
     <div class="admin-section">
 
       <h3>
@@ -1606,19 +1571,13 @@ input[type="password"] {
 
 </div>
 
-<!-- =========================
-     PEEK CHAT
-========================= -->
-
 <div id="peekChatModal" class="overlay-screen">
 
   <div class="peek-chat-box">
 
     <div class="peek-chat-header">
 
-      <div
-        style="display:flex;align-items:center;gap:8px;"
-      >
+      <div style="display:flex;align-items:center;gap:8px;">
 
         <i
           class="fa-solid fa-user-ninja"
@@ -1627,15 +1586,11 @@ input[type="password"] {
 
         <div>
 
-          <h4
-            style="font-size:14px;font-weight:700;"
-          >
+          <h4 style="font-size:14px;font-weight:700;">
             Mode Intip Chat (Admin)
           </h4>
 
-          <span
-            style="font-size:10.5px;color:var(--text-sub);"
-          >
+          <span style="font-size:10.5px;color:var(--text-sub);">
             Tanpa merubah status terbaca / centang biru
           </span>
 
@@ -1673,8 +1628,6 @@ input[type="password"] {
 
 </div>
 
-<!-- TOAST -->
-
 <div id="toast">
   Notification
 </div>
@@ -1702,12 +1655,19 @@ if (!firebase.apps.length) {
 const db = firebase.database();
 
 /* ============================================================
-   PASSWORD ASLI
+   PASSWORD VERIFIKASI DENGAN SHA-256 (KEAMANAN TAMBAHAN)
 ============================================================ */
 
-const PASS_PAPAH = "papahngentot";
-const PASS_MAMAH = "mamahchat";
-const PASS_ADMIN = "adminngentot";
+const HASH_PAPAH = "612c040a90e64eb04f7725ab0eb3df842727d42305945afe719e4f24e83bedde";
+const HASH_MAMAH = "7b932e5654e145470edf44a16dd6119c687fb96321c5e7c904451e491172e53a";
+const HASH_ADMIN = "65288f85b38978aaee3dd20d736fe33ff0d0ddc48743fcb2adbb9a53fc3df22f";
+
+async function sha256(str) {
+  const buffer = new TextEncoder().encode(str);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 /* ============================================================
    KONFIGURASI OPTIMASI
@@ -1715,7 +1675,6 @@ const PASS_ADMIN = "adminngentot";
 
 const INITIAL_MESSAGE_LIMIT = 50;
 const MESSAGE_PAGE_SIZE = 50;
-
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 /* Kompresi gambar */
@@ -1723,37 +1682,32 @@ const IMAGE_MAX_WIDTH = 1280;
 const IMAGE_MAX_HEIGHT = 1280;
 const IMAGE_QUALITY = 0.78;
 
-/* Avatar jauh lebih kecil */
+/* Avatar */
 const AVATAR_MAX_WIDTH = 500;
 const AVATAR_MAX_HEIGHT = 500;
 const AVATAR_QUALITY = 0.72;
 
 /* ============================================================
-   GLOBAL STATE
+   GLOBAL STATE & MEMORY CACHE
 ============================================================ */
 
 let currentUser = null;
 let partnerUser = null;
 
 let totalStorageBytes = 0;
-
-let userAvatars = {
-  papah:null,
-  mamah:null
-};
+let userAvatars = { papah:null, mamah:null };
 
 let allMessages = [];
 const messageMap = new Map();
+const objectUrlCache = new Map(); // Mencegah memory leak RAM ponsel
 
 let latestMessagesQuery = null;
-
 let oldestMessageKey = null;
 let newestMessageKey = null;
 let hasMoreOlderMessages = true;
 let isLoadingOlder = false;
 
 let activeFilter = null;
-
 let currentSessionRef = null;
 let sessionStartTime = null;
 
@@ -1764,8 +1718,58 @@ let cachedUserSessions = [];
 let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
+let recordTimerInterval = null;
+let recordSeconds = 0;
 
 let userNearBottom = true;
+
+/* ============================================================
+   UTILITAS PERFORMANSA: CONVERT DATAURL TO BLOB OBJECT URL
+============================================================ */
+
+function getDisplayUrl(dataUrl) {
+  if (!dataUrl) return '';
+  if (!dataUrl.startsWith('data:')) return dataUrl;
+  
+  if (objectUrlCache.has(dataUrl)) {
+    return objectUrlCache.get(dataUrl);
+  }
+
+  try {
+    const blob = dataURLToBlob(dataUrl);
+    const objUrl = URL.createObjectURL(blob);
+    objectUrlCache.set(dataUrl, objUrl);
+    return objUrl;
+  } catch (e) {
+    return dataUrl;
+  }
+}
+
+function triggerHaptic() {
+  if (navigator.vibrate) {
+    try { navigator.vibrate(15); } catch(e){}
+  }
+}
+
+function sanitizeFileName(name) {
+  return (name || 'file').replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+/* ============================================================
+   KEYBOARD VIRTUAL & NETWORK STATUS HANDLING
+============================================================ */
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', function() {
+    const app = document.querySelector('.app-container');
+    if (app) {
+      app.style.height = `${window.visualViewport.height}px`;
+    }
+  });
+}
+
+window.addEventListener('online', () => showToast('🟢 Terhubung kembali ke internet'));
+window.addEventListener('offline', () => showToast('🔴 Koneksi internet terputus'));
 
 /* ============================================================
    PULL TO REFRESH PROTECTION
@@ -1791,21 +1795,16 @@ document.addEventListener(
     const touchY = e.touches[0].clientY;
     const touchDiff = touchY - touchStartY;
 
-    const scrollable =
-      e.target.closest(
-        '.chat-messages,.modal-box,.media-list-container,.timeline-container'
-      );
+    const scrollable = e.target.closest(
+      '.chat-messages,.modal-box,.media-list-container,.timeline-container'
+    );
 
     if (scrollable) {
       if (touchDiff > 0 && scrollable.scrollTop <= 0) {
-        if (e.cancelable) {
-          e.preventDefault();
-        }
+        if (e.cancelable) e.preventDefault();
       }
     } else {
-      if (touchDiff > 0 && e.cancelable) {
-        e.preventDefault();
-      }
+      if (touchDiff > 0 && e.cancelable) e.preventDefault();
     }
   },
   { passive:false }
@@ -1815,49 +1814,45 @@ document.addEventListener(
    CHAT SCROLL TRACKING
 ============================================================ */
 
-document.addEventListener(
-  'DOMContentLoaded',
-  function() {
-    const container = document.getElementById('messagesContainer');
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('messagesContainer');
+  if (container) {
+    container.addEventListener(
+      'scroll',
+      function() {
+        const distance = container.scrollHeight - container.scrollTop - container.clientHeight;
+        userNearBottom = distance < 120;
 
-    if (container) {
-      container.addEventListener(
-        'scroll',
-        function() {
-          const distance =
-            container.scrollHeight -
-            container.scrollTop -
-            container.clientHeight;
-
-          userNearBottom = distance < 120;
-
-          if (
-            container.scrollTop <= 60 &&
-            hasMoreOlderMessages &&
-            !isLoadingOlder &&
-            !activeFilter
-          ) {
-            loadOlderMessages();
-          }
-        },
-        { passive:true }
-      );
-    }
+        if (
+          container.scrollTop <= 60 &&
+          hasMoreOlderMessages &&
+          !isLoadingOlder &&
+          !activeFilter
+        ) {
+          loadOlderMessages();
+        }
+      },
+      { passive:true }
+    );
   }
-);
+});
 
 /* ============================================================
-   PASSWORD
+   PASSWORD VERIFICATION
 ============================================================ */
 
-function verifyPassword() {
+async function verifyPassword() {
   const input = document.getElementById('passInput').value.trim();
+  if (!input) return;
+  
+  triggerHaptic();
+  const hashed = await sha256(input);
 
-  if (input === PASS_PAPAH) {
+  if (hashed === HASH_PAPAH) {
     startChatSession('papah');
-  } else if (input === PASS_MAMAH) {
+  } else if (hashed === HASH_MAMAH) {
     startChatSession('mamah');
-  } else if (input === PASS_ADMIN) {
+  } else if (hashed === HASH_ADMIN) {
     openAdminDashboard();
   } else {
     showToast("❌ Password Salah!");
@@ -1866,7 +1861,7 @@ function verifyPassword() {
 }
 
 /* ============================================================
-   START CHAT
+   START CHAT SESSION
 ============================================================ */
 
 function startChatSession(role) {
@@ -1894,7 +1889,6 @@ function recordAppSessionStart() {
 
   sessionStartTime = Date.now();
   const sessionRef = db.ref(`analytics/sessions/${currentUser}`).push();
-
   currentSessionRef = sessionRef;
 
   sessionRef.set({
@@ -1943,15 +1937,14 @@ function updatePartnerAvatar() {
   if (partnerAv) {
     element.innerHTML = '';
     const img = document.createElement('img');
-    img.src = partnerAv;
+    img.src = getDisplayUrl(partnerAv);
     img.loading = 'lazy';
     img.alt = 'Avatar';
     element.appendChild(img);
   } else {
-    element.innerHTML =
-      partnerUser === 'mamah'
-        ? '<i class="fa-solid fa-user-nurse"></i>'
-        : '<i class="fa-solid fa-user-tie"></i>';
+    element.innerHTML = partnerUser === 'mamah'
+      ? '<i class="fa-solid fa-user-nurse"></i>'
+      : '<i class="fa-solid fa-user-tie"></i>';
   }
 }
 
@@ -2041,6 +2034,7 @@ function listenPartnerPresence() {
 ============================================================ */
 
 function toggleDropdownMenu() {
+  triggerHaptic();
   document.getElementById('dropdownMenu').classList.toggle('show');
 }
 
@@ -2123,10 +2117,6 @@ function closeFilterBar() {
   renderMessages(allMessages, { forceBottom: true, markRead: true });
 }
 
-/* ============================================================
-   SEARCH
-============================================================ */
-
 function filterMessagesBySearch() {
   const query = document.getElementById('searchInput').value.toLowerCase().trim();
 
@@ -2144,10 +2134,6 @@ function filterMessagesBySearch() {
 
   renderMessages(filtered, { forceBottom: false, markRead: false });
 }
-
-/* ============================================================
-   DATE FILTER
-============================================================ */
 
 function filterMessagesByDate() {
   const selectedDateStr = document.getElementById('datePickerInput').value;
@@ -2197,6 +2183,7 @@ function toggleActionBtn() {
 }
 
 function handleActionBtn() {
+  triggerHaptic();
   const text = document.getElementById('messageInput').value.trim();
   if (text.length > 0) {
     sendMessage();
@@ -2206,7 +2193,7 @@ function handleActionBtn() {
 }
 
 /* ============================================================
-   VOICE RECORDING
+   VOICE RECORDING DENGAN TIMER LIVE
 ============================================================ */
 
 async function toggleVoiceRecording() {
@@ -2240,6 +2227,8 @@ async function toggleVoiceRecording() {
       };
 
       mediaRecorder.onstop = function() {
+        clearInterval(recordTimerInterval);
+        
         const audioBlob = new Blob(audioChunks, {
           type: mediaRecorder.mimeType || 'audio/webm'
         });
@@ -2265,10 +2254,19 @@ async function toggleVoiceRecording() {
 
       mediaRecorder.start();
       isRecording = true;
+      recordSeconds = 0;
 
       btn.classList.add('recording');
       icon.className = 'fa-solid fa-stop';
-      showToast('🎙️ Merekam suara... Klik lagi untuk berhenti');
+
+      recordTimerInterval = setInterval(() => {
+        recordSeconds++;
+        const mins = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+        const secs = String(recordSeconds % 60).padStart(2, '0');
+        showToast(`🎙️ Merekam (${mins}:${secs})... Klik lagi untuk berhenti`);
+      }, 1000);
+
+      showToast('🎙️ Merekam (00:00)... Klik lagi untuk berhenti');
     } catch (err) {
       showToast('❌ Gagal mengakses mikrofon!');
     }
@@ -2277,6 +2275,7 @@ async function toggleVoiceRecording() {
       mediaRecorder.stop();
     }
 
+    clearInterval(recordTimerInterval);
     isRecording = false;
     btn.classList.remove('recording');
     icon.className = 'fa-solid fa-microphone';
@@ -2339,7 +2338,6 @@ function listenMessagesOptimized() {
 
   latestMessagesQuery = db.ref('chats').orderByKey().limitToLast(INITIAL_MESSAGE_LIMIT);
 
-  /* PERBAIKAN: Fallback ID jika tidak ada di objek pesan */
   latestMessagesQuery.on('child_added', function(snapshot) {
     const msg = snapshot.val();
     if (msg) {
@@ -2367,10 +2365,6 @@ function listenMessagesOptimized() {
     renderMessages(allMessages, { forceBottom: false, markRead: false });
   });
 }
-
-/* ============================================================
-   ADD / UPDATE MESSAGE
-============================================================ */
 
 function addOrUpdateMessage(msg, isNew) {
   if (!msg || !msg.id) return;
@@ -2406,18 +2400,10 @@ function addOrUpdateMessage(msg, isNew) {
   }
 }
 
-/* ============================================================
-   MARK READ
-============================================================ */
-
 function markMessageRead(messageId) {
   if (!messageId || currentUser === 'admin') return;
   db.ref(`chats/${messageId}/status`).set('read');
 }
-
-/* ============================================================
-   APPLY CURRENT FILTER
-============================================================ */
 
 function applyCurrentFilter() {
   if (!activeFilter) {
@@ -2585,27 +2571,28 @@ function createMessageElement(msg) {
 }
 
 /* ============================================================
-   MEDIA ELEMENT
+   MEDIA ELEMENT (PENGGUNAAN BLOB URL UNTUK MENGHEMAT RAM)
 ============================================================ */
 
 function createMediaElement(media) {
   if (!media || !media.url) return null;
 
   const type = media.type || '';
+  const displayUrl = getDisplayUrl(media.url);
 
   if (type.startsWith('image/')) {
     const wrapper = document.createElement('div');
     wrapper.className = 'media-container';
 
     const img = document.createElement('img');
-    img.src = media.url;
+    img.src = displayUrl;
     img.loading = 'lazy';
     img.decoding = 'async';
     img.className = 'media-preview';
     img.alt = media.name || 'Foto';
 
     img.onclick = function() {
-      openImageModal(media.url, media.name);
+      openImageModal(displayUrl, media.name);
     };
 
     wrapper.appendChild(img);
@@ -2617,7 +2604,7 @@ function createMediaElement(media) {
     wrapper.className = 'media-container';
 
     const video = document.createElement('video');
-    video.src = media.url;
+    video.src = displayUrl;
     video.controls = true;
     video.preload = 'none';
     video.className = 'media-video';
@@ -2632,7 +2619,7 @@ function createMediaElement(media) {
     wrapper.style.marginTop = '4px';
 
     const audio = document.createElement('audio');
-    audio.src = media.url;
+    audio.src = displayUrl;
     audio.controls = true;
     audio.preload = 'none';
     audio.className = 'audio-player';
@@ -2659,7 +2646,7 @@ function createMediaElement(media) {
   button.appendChild(document.createTextNode(` Unduh ${media.name || 'File'}`));
 
   button.onclick = function() {
-    downloadBase64(media.url, media.name);
+    downloadBase64(displayUrl, sanitizeFileName(media.name));
   };
 
   wrapper.appendChild(button);
@@ -2671,6 +2658,7 @@ function createMediaElement(media) {
 ============================================================ */
 
 async function openPeekChatModal() {
+  triggerHaptic();
   const modal = document.getElementById('peekChatModal');
   const container = document.getElementById('peekMessagesContainer');
 
@@ -2748,7 +2736,7 @@ function closePeekChatModal() {
 }
 
 /* ============================================================
-   FILE UPLOAD
+   FILE UPLOAD WITH SANITIZED FILENAME
 ============================================================ */
 
 async function handleFileUpload(event) {
@@ -2761,6 +2749,8 @@ async function handleFileUpload(event) {
     return;
   }
 
+  const safeName = sanitizeFileName(file.name);
+
   try {
     if (file.type && file.type.startsWith('image/')) {
       showToast('⏳ Mengompres foto...');
@@ -2771,9 +2761,8 @@ async function handleFileUpload(event) {
         IMAGE_QUALITY
       );
 
-      /* PERBAIKAN: Pastikan jenis MIME selalu terisi lengkap */
       const mediaObj = {
-        name: file.name,
+        name: safeName,
         type: compressed.type || file.type || 'image/jpeg',
         size: compressed.blob.size,
         url: compressed.dataUrl
@@ -2786,7 +2775,7 @@ async function handleFileUpload(event) {
       const dataUrl = await fileToDataURL(file);
 
       const mediaObj = {
-        name: file.name,
+        name: safeName,
         type: file.type || 'application/octet-stream',
         size: file.size,
         url: dataUrl
@@ -2803,10 +2792,6 @@ async function handleFileUpload(event) {
   }
 }
 
-/* ============================================================
-   FILE TO DATA URL
-============================================================ */
-
 function fileToDataURL(file) {
   return new Promise(function(resolve, reject) {
     const reader = new FileReader();
@@ -2815,10 +2800,6 @@ function fileToDataURL(file) {
     reader.readAsDataURL(file);
   });
 }
-
-/* ============================================================
-   IMAGE COMPRESSION
-============================================================ */
 
 function compressImage(file, maxWidth, maxHeight, quality) {
   return new Promise(function(resolve, reject) {
@@ -2851,7 +2832,6 @@ function compressImage(file, maxWidth, maxHeight, quality) {
         const binaryLength = Math.ceil(base64.length * 0.75);
         const blob = dataURLToBlob(dataUrl);
 
-        /* PERBAIKAN: Masukkan properti 'type' agar MIME type tidak hilang */
         resolve({
           dataUrl: dataUrl,
           blob: blob,
@@ -2875,10 +2855,6 @@ function compressImage(file, maxWidth, maxHeight, quality) {
   });
 }
 
-/* ============================================================
-   DATA URL TO BLOB
-============================================================ */
-
 function dataURLToBlob(dataUrl) {
   const parts = dataUrl.split(',');
   const mimeMatch = parts[0].match(/:(.*?);/);
@@ -2898,13 +2874,14 @@ function dataURLToBlob(dataUrl) {
 ============================================================ */
 
 function openImageModal(url, filename) {
+  triggerHaptic();
   const modal = document.getElementById('imageModal');
   const img = document.getElementById('lightboxImg');
   const button = document.getElementById('btnDownloadImg');
 
   img.src = url;
   button.onclick = function() {
-    downloadBase64(url, filename);
+    downloadBase64(url, sanitizeFileName(filename));
   };
 
   modal.style.display = 'flex';
@@ -2921,16 +2898,12 @@ function closeImageModal() {
   }, 100);
 }
 
-/* ============================================================
-   DOWNLOAD
-============================================================ */
-
 function downloadBase64(url, filename) {
   if (!url) return;
 
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename || 'file_download';
+  a.download = sanitizeFileName(filename) || 'file_download';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -3013,6 +2986,7 @@ function closeAdminModal() {
 }
 
 function switchAnalyticsUser(user) {
+  triggerHaptic();
   analyticsSelectedUser = user;
   document.getElementById('tabPapahBtn').classList.toggle('active', user === 'papah');
   document.getElementById('tabMamahBtn').classList.toggle('active', user === 'mamah');
@@ -3111,40 +3085,19 @@ function loadAnalyticsData() {
   });
 }
 
-/* ============================================================
-   LAZY LOAD CHART.JS
-============================================================ */
-
-let chartLoadPromise = null;
-
 function loadChartJS(callback) {
   if (typeof Chart !== 'undefined') {
     callback();
     return;
   }
 
-  if (chartLoadPromise) {
-    chartLoadPromise.then(callback);
-    return;
-  }
-
-  chartLoadPromise = new Promise(function(resolve, reject) {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-    script.async = true;
-    script.onload = function() { resolve(); };
-    script.onerror = function() { reject(); };
-    document.head.appendChild(script);
-  });
-
-  chartLoadPromise.then(callback).catch(function() {
-    showToast('⚠️ Grafik gagal dimuat.');
-  });
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+  script.async = true;
+  script.onload = function() { callback(); };
+  script.onerror = function() { showToast('⚠️ Grafik gagal dimuat.'); };
+  document.head.appendChild(script);
 }
-
-/* ============================================================
-   TIMELINE
-============================================================ */
 
 function loadTimelineData() {
   const selectedDateStr = document.getElementById('analyticsDatePicker').value;
@@ -3220,10 +3173,6 @@ function loadTimelineData() {
   });
 }
 
-/* ============================================================
-   HOURLY CHART
-============================================================ */
-
 function renderHourlyChart(hourlyCounts) {
   if (typeof Chart === 'undefined') return;
 
@@ -3282,7 +3231,7 @@ function updateAdminAvatarUI() {
   if (pAv) {
     pElement.innerHTML = '';
     const img = document.createElement('img');
-    img.src = pAv;
+    img.src = getDisplayUrl(pAv);
     img.loading = 'lazy';
     pElement.appendChild(img);
   } else {
@@ -3292,17 +3241,13 @@ function updateAdminAvatarUI() {
   if (mAv) {
     mElement.innerHTML = '';
     const img = document.createElement('img');
-    img.src = mAv;
+    img.src = getDisplayUrl(mAv);
     img.loading = 'lazy';
     mElement.appendChild(img);
   } else {
     mElement.innerHTML = '<i class="fa-solid fa-user-nurse"></i>';
   }
 }
-
-/* ============================================================
-   AVATAR UPLOAD
-============================================================ */
 
 async function uploadAvatar(targetUser, event) {
   const file = event.target.files[0];
@@ -3363,6 +3308,7 @@ function loadAdminMediaList() {
 
         mediaFound = true;
         const media = msg.media;
+        const displayUrl = getDisplayUrl(media.url);
         const sizeMB = ((media.size || 0) / (1024 * 1024)).toFixed(2);
 
         const row = document.createElement('div');
@@ -3407,21 +3353,21 @@ function loadAdminMediaList() {
 
         if (media.type && media.type.startsWith('image/')) {
           const img = document.createElement('img');
-          img.src = media.url;
+          img.src = displayUrl;
           img.loading = 'lazy';
           img.className = 'media-preview-admin';
-          img.onclick = function() { openImageModal(media.url, media.name); };
+          img.onclick = function() { openImageModal(displayUrl, media.name); };
           preview.appendChild(img);
         } else if (media.type && media.type.startsWith('video/')) {
           const video = document.createElement('video');
-          video.src = media.url;
+          video.src = displayUrl;
           video.controls = true;
           video.preload = 'none';
           video.className = 'media-preview-admin';
           preview.appendChild(video);
         } else if (media.type && media.type.startsWith('audio/')) {
           const audio = document.createElement('audio');
-          audio.src = media.url;
+          audio.src = displayUrl;
           audio.controls = true;
           audio.preload = 'none';
           audio.style.width = '100%';
@@ -3434,7 +3380,7 @@ function loadAdminMediaList() {
           button.style.fontSize = '11px';
           button.style.width = 'auto';
           button.innerHTML = `<i class="fa-solid fa-file-arrow-down"></i> Buka / Unduh Dokumen`;
-          button.onclick = function() { downloadBase64(media.url, media.name); };
+          button.onclick = function() { downloadBase64(displayUrl, sanitizeFileName(media.name)); };
           preview.appendChild(button);
         }
 
@@ -3451,10 +3397,6 @@ function loadAdminMediaList() {
   });
 }
 
-/* ============================================================
-   DELETE SINGLE MEDIA
-============================================================ */
-
 function deleteSingleMedia(msgId) {
   if (!confirm('Hapus file media ini dari chat?')) return;
 
@@ -3467,10 +3409,6 @@ function deleteSingleMedia(msgId) {
       showToast('❌ Gagal menghapus media.');
     });
 }
-
-/* ============================================================
-   DELETE ALL MEDIA
-============================================================ */
 
 function deleteAllMedia() {
   if (!confirm('Apakah Anda yakin ingin menghapus SELURUH file foto, video, audio dan dokumen dari semua pesan? Teks chat tidak akan terhapus.')) return;
@@ -3505,10 +3443,6 @@ function deleteAllMedia() {
   });
 }
 
-/* ============================================================
-   DELETE ALL CHATS
-============================================================ */
-
 function deleteAllChats() {
   if (!confirm('⚠️ PERINGATAN: Seluruh riwayat obrolan akan dihapus secara permanen. Lanjutkan?')) return;
 
@@ -3533,6 +3467,7 @@ function deleteAllChats() {
 ============================================================ */
 
 function openStorageModal() {
+  triggerHaptic();
   document.getElementById('storageModal').style.display = 'flex';
 }
 
@@ -3570,22 +3505,16 @@ function showToast(msg) {
 }
 
 /* ============================================================
-   FORMAT BYTES
+   FORMAT BYTES & ESCAPE HTML
 ============================================================ */
 
 function formatBytes(bytes) {
   if (!bytes || bytes <= 0) return '0 KB';
-
   const units = ['B', 'KB', 'MB', 'GB'];
   const index = Math.floor(Math.log(bytes) / Math.log(1024));
   const safeIndex = Math.min(index, units.length - 1);
-
   return (bytes / Math.pow(1024, safeIndex)).toFixed(safeIndex === 0 ? 0 : 2) + ' ' + units[safeIndex];
 }
-
-/* ============================================================
-   ESCAPE HTML
-============================================================ */
 
 function escapeHtml(value) {
   const div = document.createElement('div');
@@ -3594,7 +3523,7 @@ function escapeHtml(value) {
 }
 
 /* ============================================================
-   CLOSE MODAL WHEN CLICK OUTSIDE
+   MODAL CLOSE CONTROLS
 ============================================================ */
 
 document.addEventListener('click', function(e) {
@@ -3605,20 +3534,12 @@ document.addEventListener('click', function(e) {
   if (e.target === storageModal) closeStorageModal();
 });
 
-/* ============================================================
-   ESC KEY
-============================================================ */
-
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     closeImageModal();
     closeStorageModal();
   }
 });
-
-/* ============================================================
-   INITIAL UI
-============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
   toggleActionBtn();
