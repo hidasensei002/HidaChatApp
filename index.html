@@ -352,9 +352,12 @@ input[type="password"] {
   gap:6px;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-y:contain;
-  background-image:radial-gradient(rgba(255,255,255,.03) 1px,transparent 0);
-  background-size:16px 16px;
   position:relative;
+  background-color:var(--bg-dark);
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  transition:background-image 1.2s ease-in-out;
 }
 
 .message-row {
@@ -2062,6 +2065,49 @@ async function sha256(str) {
   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/* ============================================================
+   ROTASI BACKGROUND WEBP OTOMATIS (SETIAP 30 DETIK)
+============================================================ */
+
+const bgList = Array.from({ length: 10 }, (_, i) => `bg${String(i + 1).padStart(3, '0')}.webp`);
+let currentBgIndex = 0;
+
+function preloadBackgroundImages() {
+  bgList.forEach(src => {
+    const img = new Image();
+    img.src = src;
+  });
+}
+
+function setChatBackground(index) {
+  const container = document.getElementById('messagesContainer');
+  const peekContainer = document.getElementById('peekMessagesContainer');
+  if (!container) return;
+
+  const bgUrl = bgList[index];
+  const bgStyle = `linear-gradient(rgba(11, 20, 26, 0.82), rgba(11, 20, 26, 0.82)), url('${bgUrl}')`;
+
+  container.style.backgroundImage = bgStyle;
+  container.style.backgroundSize = 'cover';
+  container.style.backgroundPosition = 'center';
+
+  if (peekContainer) {
+    peekContainer.style.backgroundImage = bgStyle;
+    peekContainer.style.backgroundSize = 'cover';
+    peekContainer.style.backgroundPosition = 'center';
+  }
+}
+
+function initAutoBackgroundRotation() {
+  preloadBackgroundImages();
+  setChatBackground(0);
+
+  setInterval(() => {
+    currentBgIndex = (currentBgIndex + 1) % bgList.length;
+    setChatBackground(currentBgIndex);
+  }, 30000); // Ganti setiap 30 detik
 }
 
 /* ============================================================
@@ -5238,14 +5284,9 @@ document.addEventListener('keydown', function(e) {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-  toggleActionBtn();
-});
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
   resetMessageInputHeight();
   toggleActionBtn();
+  initAutoBackgroundRotation();
 });
 </script>
 
