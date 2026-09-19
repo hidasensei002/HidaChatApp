@@ -308,7 +308,6 @@ input[type="password"] {
   margin:4px 0;
 }
 
-/* Sakelar Toggle Background */
 .toggle-switch {
   position:relative;
   display:inline-block;
@@ -459,7 +458,6 @@ input:checked + .toggle-slider:before {
   border-top-left-radius:0;
 }
 
-/* Optimasi CLS: Pencegahan layout bergeser saat media dimuat */
 .media-container {
   margin-top:4px;
   margin-bottom:2px;
@@ -961,7 +959,6 @@ input:checked + .toggle-slider:before {
   cursor:pointer;
 }
 
-
 /* =========================
    ADMIN MEDIA MANAGER UPGRADE
 ========================= */
@@ -1221,7 +1218,6 @@ input:checked + .toggle-slider:before {
   }
 }
 
-
 /* =========================================================
    VOICE CALL / WEBRTC
 ========================================================= */
@@ -1421,7 +1417,6 @@ input:checked + .toggle-slider:before {
 
         <div class="dropdown-divider"></div>
 
-        <!-- TOMBOL BACKGROUND ANIMASI DENGAN TOGGLE SWITCH -->
         <div class="dropdown-item" onclick="toggleBackgroundAnimation(event)" style="justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:10px;">
             <i class="fa-solid fa-image"></i>
@@ -1693,6 +1688,20 @@ input:checked + .toggle-slider:before {
 
 </div>
 
+<!-- MODAL PENGINGAT KHUSUS MAMAH -->
+<div id="mamahReminderModal" class="overlay-screen" style="display:none; z-index:99999;">
+  <div class="modal-box">
+    <i class="fa-solid fa-bell icon-head" style="color:var(--warning);"></i>
+    <h2 id="mamahReminderTitle">Pengingat Khusus</h2>
+    <div id="mamahReminderText" style="font-size:14px; color:#e9edef; margin:16px 0 24px; line-height:1.5; text-align:center; white-space:pre-wrap; background:rgba(255,255,255,0.05); padding:14px; border-radius:12px; border:1px solid var(--glass-border);">
+      ...
+    </div>
+    <div id="mamahReminderActions" style="display:flex; gap:10px; justify-content:center;">
+      <!-- Tombol dinamis diinjeksi via JS -->
+    </div>
+  </div>
+</div>
+
 <div id="adminModal" class="overlay-screen">
 
   <div class="modal-box">
@@ -1713,6 +1722,31 @@ input:checked + .toggle-slider:before {
       <i class="fa-solid fa-eye"></i>
       Intip Chat (Tanpa Centang Biru)
     </button>
+
+    <!-- SECTION EDIT PENGINGAT MAMAH DARI ADMIN -->
+    <div class="admin-section">
+      <h3>
+        <i class="fa-solid fa-bell"></i>
+        Kelola Pengingat Khusus Mamah
+      </h3>
+      <p style="font-size:11px;color:var(--text-sub);margin-bottom:12px;">
+        Pengingat ini hanya akan tampil pada saat Mamah login dan masuk ke halaman chat.
+      </p>
+
+      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;color:#e9edef;">
+        Pengingat Utama (Pertama):
+      </label>
+      <textarea id="adminReminder1Input" rows="3" placeholder="Tulis pengingat pertama di sini..." style="width:100%;background:#111b21;border:1px solid var(--glass-border);color:#fff;padding:10px;border-radius:8px;font-size:13px;outline:none;resize:vertical;margin-bottom:12px;"></textarea>
+
+      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;color:#e9edef;">
+        Pengingat Lanjutan (Jika Mamah Tekan "Belum"):
+      </label>
+      <textarea id="adminReminder2Input" rows="3" placeholder="Tulis pengingat lanjutan di sini..." style="width:100%;background:#111b21;border:1px solid var(--glass-border);color:#fff;padding:10px;border-radius:8px;font-size:13px;outline:none;resize:vertical;margin-bottom:14px;"></textarea>
+
+      <button class="btn-action" onclick="saveAdminReminder()">
+        <i class="fa-solid fa-floppy-disk"></i> Simpan Pengingat
+      </button>
+    </div>
 
     <div class="admin-section">
 
@@ -2073,9 +2107,6 @@ input:checked + .toggle-slider:before {
   </button>
 </div>
 
-
-
-<!-- Voice Call Overlay -->
 <div class="voice-call-overlay" id="voiceCallOverlay">
   <div class="voice-call-box">
     <div class="voice-call-avatar" id="voiceCallAvatar">
@@ -2114,7 +2145,7 @@ if (!firebase.apps.length) {
 const db = firebase.database();
 
 /* ============================================================
-   PASSWORD VERIFIKASI DENGAN SHA-256 (KEAMANAN TAMBAHAN)
+   PASSWORD VERIFIKASI DENGAN SHA-256
 ============================================================ */
 
 const HASH_PAPAH = "612c040a90e64eb04f7725ab0eb3df842727d42305945afe719e4f24e83bedde";
@@ -2129,7 +2160,7 @@ async function sha256(str) {
 }
 
 /* ============================================================
-   ROTASI BACKGROUND WEBP OTOMATIS (SETIAP 30 DETIK) & CONTROL TOGGLE
+   ROTASI BACKGROUND WEBP OTOMATIS (SETIAP 30 DETIK) & TOGGLE
 ============================================================ */
 
 const bgList = Array.from({ length: 10 }, (_, i) => `bg${String(i + 1).padStart(3, '0')}.webp`);
@@ -2150,7 +2181,7 @@ function setChatBackground(index) {
 
   if (!isBgAnimEnabled) {
     container.style.backgroundImage = 'none';
-    container.style.backgroundColor = '#07201b'; // Hijau tua polos khas WhatsApp
+    container.style.backgroundColor = '#07201b';
     if (peekContainer) {
       peekContainer.style.backgroundImage = 'none';
       peekContainer.style.backgroundColor = '#07201b';
@@ -2177,7 +2208,6 @@ function setChatBackground(index) {
 function initAutoBackgroundRotation() {
   preloadBackgroundImages();
 
-  // Ambil pengaturan yang tersimpan di memori lokal HP (opsional/otomatis)
   const savedBgAnim = localStorage.getItem('bgAnimEnabled');
   if (savedBgAnim !== null) {
     isBgAnimEnabled = savedBgAnim === 'true';
@@ -2197,7 +2227,7 @@ function initAutoBackgroundRotation() {
     if (isBgAnimEnabled) {
       setChatBackground(currentBgIndex);
     }
-  }, 30000); // Ganti setiap 30 detik
+  }, 30000);
 }
 
 function toggleBackgroundAnimation(event) {
@@ -2230,12 +2260,10 @@ const INITIAL_MESSAGE_LIMIT = 50;
 const MESSAGE_PAGE_SIZE = 50;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-/* Kompresi gambar */
 const IMAGE_MAX_WIDTH = 1280;
 const IMAGE_MAX_HEIGHT = 1280;
 const IMAGE_QUALITY = 0.78;
 
-/* Avatar */
 const AVATAR_MAX_WIDTH = 500;
 const AVATAR_MAX_HEIGHT = 500;
 const AVATAR_QUALITY = 0.72;
@@ -2252,7 +2280,7 @@ let userAvatars = { papah:null, mamah:null };
 
 let allMessages = [];
 const messageMap = new Map();
-const objectUrlCache = new Map(); // Mencegah memory leak RAM ponsel
+const objectUrlCache = new Map();
 
 let latestMessagesQuery = null;
 let oldestMessageKey = null;
@@ -2276,13 +2304,11 @@ let recordSeconds = 0;
 
 let userNearBottom = true;
 
-/* Reply / copy message state */
 let selectedMessageId = null;
 let replyTargetMessage = null;
 let messageLongPressTimer = null;
 let suppressMessageClick = false;
 
-/* Admin media / peek chat state */
 let adminMediaItems = [];
 let adminMediaViewMode = 'grid';
 let adminMediaFilter = 'all';
@@ -2290,7 +2316,6 @@ let selectedPeekMessageId = null;
 let peekLongPressTimer = null;
 let peekSuppressClick = false;
 
-/* Voice call / WebRTC state */
 let activeCallId = null;
 let activeCallRole = null;
 let activeCallRef = null;
@@ -2304,7 +2329,6 @@ let callListenersAttached = false;
 let callRemoteCandidatesAttached = false;
 let callFinalizing = false;
 
-/* Call log / typing indicator state */
 let callLogStartTime = null;
 let callLogAcceptedTime = null;
 let callConnectedTime = null;
@@ -2314,8 +2338,11 @@ let callRemoteTrackReceived = false;
 let typingStopTimer = null;
 let typingPresenceRef = null;
 
+/* State Pengingat Mamah */
+let mamahReminderData = { reminder1: '', reminder2: '' };
+
 /* ============================================================
-   UTILITAS PERFORMANSA: CONVERT DATAURL TO BLOB OBJECT URL
+   UTILITAS PERFORMANSA
 ============================================================ */
 
 function getDisplayUrl(dataUrl) {
@@ -2346,10 +2373,6 @@ function sanitizeFileName(name) {
   return (name || 'file').replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
-/* ============================================================
-   KEYBOARD VIRTUAL & NETWORK STATUS HANDLING
-============================================================ */
-
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', function() {
     const app = document.querySelector('.app-container');
@@ -2361,10 +2384,6 @@ if (window.visualViewport) {
 
 window.addEventListener('online', () => showToast('🟢 Terhubung kembali ke internet'));
 window.addEventListener('offline', () => showToast('🔴 Koneksi internet terputus'));
-
-/* ============================================================
-   PULL TO REFRESH PROTECTION
-============================================================ */
 
 let touchStartY = 0;
 
@@ -2400,10 +2419,6 @@ document.addEventListener(
   },
   { passive:false }
 );
-
-/* ============================================================
-   CHAT SCROLL TRACKING
-============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
   const container = document.getElementById('messagesContainer');
@@ -2471,6 +2486,109 @@ function startChatSession(role) {
   listenPartnerPresence();
   initVoiceCallSignaling();
   calculateStorageUsageOptimized();
+
+  /* FITUR TERBARU: Cek & tampilkan pengingat jika user yang login adalah MAMAH */
+  if (role === 'mamah') {
+    checkAndShowMamahReminder();
+  }
+}
+
+/* ============================================================
+   FITUR PENGINGAT KHUSUS MAMAH
+============================================================ */
+
+function checkAndShowMamahReminder() {
+  db.ref('reminder').once('value', function(snapshot) {
+    const data = snapshot.val();
+    if (data && data.reminder1 && data.reminder1.trim() !== '') {
+      mamahReminderData = data;
+      showMamahReminderStep1();
+    }
+  });
+}
+
+function showMamahReminderStep1() {
+  const modal = document.getElementById('mamahReminderModal');
+  const textEl = document.getElementById('mamahReminderText');
+  const actionsEl = document.getElementById('mamahReminderActions');
+  const titleEl = document.getElementById('mamahReminderTitle');
+
+  if (!modal || !textEl || !actionsEl) return;
+
+  if (titleEl) titleEl.innerText = 'Pengingat Khusus';
+  textEl.innerText = mamahReminderData.reminder1 || '';
+
+  actionsEl.innerHTML = `
+    <button class="btn-action" style="background:var(--primary);color:#111b21;flex:1;" onclick="mamahReminderDone()">
+      <i class="fa-solid fa-check"></i> Sudah
+    </button>
+    <button class="btn-action" style="background:#374151;color:#fff;flex:1;" onclick="mamahReminderNotYet()">
+      <i class="fa-solid fa-xmark"></i> Belum
+    </button>
+  `;
+
+  modal.style.display = 'flex';
+}
+
+function mamahReminderDone() {
+  triggerHaptic();
+  closeMamahReminderModal();
+  showToast('👍 Baik, selamat beraktivitas!');
+}
+
+function mamahReminderNotYet() {
+  triggerHaptic();
+  const textEl = document.getElementById('mamahReminderText');
+  const actionsEl = document.getElementById('mamahReminderActions');
+  const titleEl = document.getElementById('mamahReminderTitle');
+
+  if (mamahReminderData.reminder2 && mamahReminderData.reminder2.trim() !== '') {
+    if (titleEl) titleEl.innerText = 'Catatan Pengingat';
+    textEl.innerText = mamahReminderData.reminder2;
+
+    actionsEl.innerHTML = `
+      <button class="btn-action" style="background:var(--primary);color:#111b21;width:100%;" onclick="mamahReminderCloseOke()">
+        <i class="fa-solid fa-thumbs-up"></i> Oke
+      </button>
+    `;
+  } else {
+    closeMamahReminderModal();
+  }
+}
+
+function mamahReminderCloseOke() {
+  triggerHaptic();
+  closeMamahReminderModal();
+}
+
+function closeMamahReminderModal() {
+  const modal = document.getElementById('mamahReminderModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function loadAdminReminderData() {
+  db.ref('reminder').once('value', function(snapshot) {
+    const data = snapshot.val() || {};
+    document.getElementById('adminReminder1Input').value = data.reminder1 || '';
+    document.getElementById('adminReminder2Input').value = data.reminder2 || '';
+  });
+}
+
+function saveAdminReminder() {
+  const r1 = document.getElementById('adminReminder1Input').value;
+  const r2 = document.getElementById('adminReminder2Input').value;
+
+  db.ref('reminder').set({
+    reminder1: r1,
+    reminder2: r2,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  }).then(function() {
+    triggerHaptic();
+    showToast('✅ Pengingat Mamah berhasil disimpan!');
+  }).catch(function(err) {
+    console.error(err);
+    showToast('❌ Gagal menyimpan pengingat.');
+  });
 }
 
 /* ============================================================
@@ -3561,7 +3679,7 @@ document.addEventListener('click', function(e) {
 });
 
 /* ============================================================
-   MEDIA ELEMENT (PENGGUNAAN BLOB URL UNTUK MENGHEMAT RAM)
+   MEDIA ELEMENT
 ============================================================ */
 
 function createMediaElement(media) {
@@ -4090,6 +4208,7 @@ function openAdminDashboard() {
   listenAvatars();
   loadAdminMediaList();
   loadAnalyticsData();
+  loadAdminReminderData(); /* <--- Muat data pengingat Mamah ke form admin */
 }
 
 function closeAdminModal() {
@@ -4265,7 +4384,7 @@ function loadTimelineData() {
     } else {
       const m = Math.floor(durSec / 60);
       const s = durSec % 60;
-      durFormatted = s > 0 ? `${m} mnt ${s} dtk` : `${m} mnt`;
+      durFormatted = s > 0 ? `${m} mnt${s} dtk` : `${m} mnt`;
     }
 
     const item = document.createElement('div');
@@ -4651,10 +4770,6 @@ function setVoiceCallAvatar(user) {
   }
 }
 
-/* ============================================================
-   CALL LOG / RIWAYAT PANGGILAN
-============================================================ */
-
 function formatCallDuration(seconds) {
   const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
   const hours = Math.floor(safeSeconds / 3600);
@@ -4876,7 +4991,6 @@ async function startVoiceCall() {
     });
     localCallStream.getAudioTracks().forEach(track => {
       track.enabled = true;
-      console.log('[VoiceCall] Local audio track:', track.label, 'enabled=', track.enabled, 'readyState=', track.readyState);
     });
     createVoicePeerConnection();
 
@@ -4909,7 +5023,7 @@ async function startVoiceCall() {
     callConnectTimeoutTimer = setTimeout(async function() {
       callConnectTimeoutTimer = null;
       if (!activeCallId || activeCallStatus === 'accepted' || callConnectedTime) return;
-      showToast('📵 Panggilan tidak terhubung dalam 2 menit.');
+      showToast('`📵 Panggilan tidak terhubung dalam 2 menit.');
       await endVoiceCall();
     }, 120000);
   } catch (error) {
@@ -4986,7 +5100,6 @@ function createVoicePeerConnection() {
   callPeerConnection.onconnectionstatechange = function() {
     if (!callPeerConnection) return;
     const state = callPeerConnection.connectionState;
-    console.log('[VoiceCall] connectionState:', state);
 
     if (state === 'connected') {
       if (callConnectTimeoutTimer) {
@@ -5004,16 +5117,6 @@ function createVoicePeerConnection() {
       showToast('❌ Koneksi panggilan gagal. Periksa jaringan kedua perangkat.');
       endVoiceCall();
     }
-  };
-
-  callPeerConnection.oniceconnectionstatechange = function() {
-    if (!callPeerConnection) return;
-    console.log('[VoiceCall] iceConnectionState:', callPeerConnection.iceConnectionState);
-  };
-
-  callPeerConnection.onsignalingstatechange = function() {
-    if (!callPeerConnection) return;
-    console.log('[VoiceCall] signalingState:', callPeerConnection.signalingState);
   };
 
   return callPeerConnection;
@@ -5107,7 +5210,6 @@ async function acceptIncomingVoiceCall() {
     });
     localCallStream.getAudioTracks().forEach(track => {
       track.enabled = true;
-      console.log('[VoiceCall] Local audio track:', track.label, 'enabled=', track.enabled, 'readyState=', track.readyState);
     });
     createVoicePeerConnection();
 
