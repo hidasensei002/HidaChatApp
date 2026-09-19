@@ -3425,8 +3425,16 @@ function createMediaElement(media) {
   const displayUrl = getDisplayUrl(media.url);
 
   if (type.startsWith('image/')) {
+    const isWebp = type === 'image/webp' || (media.name && media.name.toLowerCase().endsWith('.webp'));
     const wrapper = document.createElement('div');
     wrapper.className = 'media-container';
+
+    if (isWebp) {
+      wrapper.style.aspectRatio = '1 / 1';
+      wrapper.style.minHeight = 'auto';
+      wrapper.style.maxWidth = '180px';
+      wrapper.style.background = 'transparent';
+    }
 
     const img = document.createElement('img');
     img.src = displayUrl;
@@ -3434,6 +3442,11 @@ function createMediaElement(media) {
     img.decoding = 'async';
     img.className = 'media-preview';
     img.alt = media.name || 'Foto';
+
+    if (isWebp) {
+      img.style.objectFit = 'contain';
+      img.style.maxHeight = '180px';
+    }
 
     img.onclick = function(event) {
       event.stopPropagation();
@@ -3692,7 +3705,22 @@ async function handleFileUpload(event) {
   const safeName = sanitizeFileName(file.name);
 
   try {
-    if (file.type && file.type.startsWith('image/')) {
+    const isWebp = file.type === 'image/webp' || safeName.toLowerCase().endsWith('.webp');
+
+    if (isWebp) {
+      showToast('⏳ Memproses stiker WebP...');
+      const dataUrl = await fileToDataURL(file);
+
+      const mediaObj = {
+        name: safeName,
+        type: 'image/webp',
+        size: file.size,
+        url: dataUrl
+      };
+
+      await sendMessage(mediaObj);
+      showToast('✅ Stiker WebP terkirim!');
+    } else if (file.type && file.type.startsWith('image/')) {
       showToast('⏳ Mengompres foto...');
       const compressed = await compressImage(
         file,
