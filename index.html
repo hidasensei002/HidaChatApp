@@ -266,7 +266,7 @@ input[type="password"] {
 }
 
 /* =========================
-   DROPDOWN
+   DROPDOWN & TOGGLE SWITCH
 ========================= */
 
 .dropdown-menu {
@@ -278,7 +278,7 @@ input[type="password"] {
   border:1px solid var(--glass-border);
   border-radius:12px;
   box-shadow:0 8px 24px rgba(0,0,0,.5);
-  min-width:210px;
+  min-width:220px;
   z-index:100;
   overflow:hidden;
 }
@@ -306,6 +306,53 @@ input[type="password"] {
   height:1px;
   background:var(--glass-border);
   margin:4px 0;
+}
+
+/* Sakelar Toggle Background */
+.toggle-switch {
+  position:relative;
+  display:inline-block;
+  width:36px;
+  height:20px;
+  flex-shrink:0;
+}
+
+.toggle-switch input {
+  opacity:0;
+  width:0;
+  height:0;
+}
+
+.toggle-slider {
+  position:absolute;
+  cursor:pointer;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  background-color:#374151;
+  transition:.3s;
+  border-radius:20px;
+}
+
+.toggle-slider:before {
+  position:absolute;
+  content:"";
+  height:14px;
+  width:14px;
+  left:3px;
+  bottom:3px;
+  background-color:#ffffff;
+  transition:.3s;
+  border-radius:50%;
+}
+
+input:checked + .toggle-slider {
+  background-color:var(--primary);
+}
+
+input:checked + .toggle-slider:before {
+  transform:translateX(16px);
 }
 
 /* =========================
@@ -357,7 +404,7 @@ input[type="password"] {
   background-size:cover;
   background-position:center;
   background-repeat:no-repeat;
-  transition:background-image 1.2s ease-in-out;
+  transition:background-image 1.2s ease-in-out, background-color 0.4s ease;
 }
 
 .message-row {
@@ -1374,6 +1421,20 @@ input[type="password"] {
 
         <div class="dropdown-divider"></div>
 
+        <!-- TOMBOL BACKGROUND ANIMASI DENGAN TOGGLE SWITCH -->
+        <div class="dropdown-item" onclick="toggleBackgroundAnimation(event)" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <i class="fa-solid fa-image"></i>
+            <span>Background Animasi</span>
+          </div>
+          <label class="toggle-switch" onclick="event.stopPropagation()">
+            <input type="checkbox" id="bgAnimToggle" checked onchange="handleBgToggleChange(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="dropdown-divider"></div>
+
         <div class="dropdown-item" onclick="filterMediaCategory('image')">
           <i class="fa-solid fa-image"></i>
           Kumpulan Foto
@@ -2068,11 +2129,12 @@ async function sha256(str) {
 }
 
 /* ============================================================
-   ROTASI BACKGROUND WEBP OTOMATIS (SETIAP 30 DETIK)
+   ROTASI BACKGROUND WEBP OTOMATIS (SETIAP 30 DETIK) & CONTROL TOGGLE
 ============================================================ */
 
 const bgList = Array.from({ length: 10 }, (_, i) => `bg${String(i + 1).padStart(3, '0')}.webp`);
 let currentBgIndex = 0;
+let isBgAnimEnabled = true;
 
 function preloadBackgroundImages() {
   bgList.forEach(src => {
@@ -2086,15 +2148,27 @@ function setChatBackground(index) {
   const peekContainer = document.getElementById('peekMessagesContainer');
   if (!container) return;
 
+  if (!isBgAnimEnabled) {
+    container.style.backgroundImage = 'none';
+    container.style.backgroundColor = '#07201b'; // Hijau tua polos khas WhatsApp
+    if (peekContainer) {
+      peekContainer.style.backgroundImage = 'none';
+      peekContainer.style.backgroundColor = '#07201b';
+    }
+    return;
+  }
+
   const bgUrl = bgList[index];
   const bgStyle = `linear-gradient(rgba(11, 20, 26, 0.82), rgba(11, 20, 26, 0.82)), url('${bgUrl}')`;
 
   container.style.backgroundImage = bgStyle;
+  container.style.backgroundColor = 'var(--bg-dark)';
   container.style.backgroundSize = 'cover';
   container.style.backgroundPosition = 'center';
 
   if (peekContainer) {
     peekContainer.style.backgroundImage = bgStyle;
+    peekContainer.style.backgroundColor = 'var(--bg-dark)';
     peekContainer.style.backgroundSize = 'cover';
     peekContainer.style.backgroundPosition = 'center';
   }
@@ -2102,12 +2176,50 @@ function setChatBackground(index) {
 
 function initAutoBackgroundRotation() {
   preloadBackgroundImages();
+
+  // Ambil pengaturan yang tersimpan di memori lokal HP (opsional/otomatis)
+  const savedBgAnim = localStorage.getItem('bgAnimEnabled');
+  if (savedBgAnim !== null) {
+    isBgAnimEnabled = savedBgAnim === 'true';
+  } else {
+    isBgAnimEnabled = true;
+  }
+
+  const toggleInput = document.getElementById('bgAnimToggle');
+  if (toggleInput) {
+    toggleInput.checked = isBgAnimEnabled;
+  }
+
   setChatBackground(0);
 
   setInterval(() => {
     currentBgIndex = (currentBgIndex + 1) % bgList.length;
-    setChatBackground(currentBgIndex);
+    if (isBgAnimEnabled) {
+      setChatBackground(currentBgIndex);
+    }
   }, 30000); // Ganti setiap 30 detik
+}
+
+function toggleBackgroundAnimation(event) {
+  if (event.target.tagName === 'INPUT') return;
+  const toggleInput = document.getElementById('bgAnimToggle');
+  if (toggleInput) {
+    toggleInput.checked = !toggleInput.checked;
+    handleBgToggleChange(toggleInput.checked);
+  }
+}
+
+function handleBgToggleChange(enabled) {
+  isBgAnimEnabled = enabled;
+  localStorage.setItem('bgAnimEnabled', enabled);
+  setChatBackground(currentBgIndex);
+  triggerHaptic();
+
+  if (enabled) {
+    showToast('✨ Background animasi diaktifkan');
+  } else {
+    showToast('🎨 Background polos (hijau tua) diaktifkan');
+  }
 }
 
 /* ============================================================
@@ -2722,13 +2834,11 @@ function autoResizeMessageInput() {
 
   const MAX_HEIGHT = 140;
 
-  // Reset first so scrollHeight always reflects the content naturally.
   input.style.height = '40px';
 
   const newHeight = Math.min(input.scrollHeight, MAX_HEIGHT);
   input.style.height = newHeight + 'px';
 
-  // Only enable vertical scrolling once the content exceeds 140px.
   input.style.overflowY = input.scrollHeight > MAX_HEIGHT ? 'auto' : 'hidden';
 }
 
@@ -2743,12 +2853,10 @@ function resetMessageInputHeight() {
 function handleMessageInputKeydown(event) {
   if (event.key !== 'Enter') return;
 
-  // Shift + Enter keeps the native textarea behavior: create a newline.
   if (event.shiftKey) {
     return;
   }
 
-  // Enter alone sends the message instead of inserting a newline.
   event.preventDefault();
   handleActionBtn();
   resetMessageInputHeight();
@@ -3197,7 +3305,6 @@ function createMessageElement(msg) {
     quote.appendChild(sender);
     quote.appendChild(quoteText);
 
-    // Klik bagian pesan yang dibalas untuk langsung menuju pesan aslinya.
     quote.title = 'Klik untuk melihat pesan yang dibalas';
     quote.addEventListener('click', function(event) {
       event.stopPropagation();
@@ -3290,8 +3397,6 @@ async function jumpToRepliedMessage(messageId) {
   const container = document.getElementById('messagesContainer');
   if (!container) return;
 
-  // Jika sedang berada di hasil filter, tampilkan kembali daftar chat normal
-  // agar pesan yang dituju bisa ditemukan tanpa mengubah data apa pun.
   if (activeFilter) {
     document.getElementById('searchBarContainer')?.classList.remove('show');
     document.getElementById('dateBarContainer')?.classList.remove('show');
@@ -3304,8 +3409,6 @@ async function jumpToRepliedMessage(messageId) {
     `.message-row[data-message-id="${CSS.escape(String(messageId))}"]`
   );
 
-  // Pesan lama bisa belum masuk karena sistem pagination. Muat halaman lama
-  // bertahap sampai pesan ditemukan, tanpa melompat-lompatkan posisi pengguna.
   while (!targetRow && hasMoreOlderMessages && !isLoadingOlder) {
     const beforeCount = allMessages.length;
     await loadOlderMessages();
@@ -3317,8 +3420,6 @@ async function jumpToRepliedMessage(messageId) {
     if (allMessages.length === beforeCount) break;
   }
 
-  // Fallback: ambil tepat pesan yang dituju jika belum ditemukan di halaman
-  // yang sudah dimuat. Ini hanya membaca data, tidak mengubah pesan lain.
   if (!targetRow) {
     try {
       const snapshot = await db.ref(`chats/${messageId}`).once('value');
@@ -3348,7 +3449,6 @@ async function jumpToRepliedMessage(messageId) {
 
   targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-  // Tandai sementara pesan asli supaya langsung terlihat jelas.
   targetRow.classList.add('message-reply-target');
   setTimeout(function() {
     targetRow.classList.remove('message-reply-target');
@@ -3578,7 +3678,6 @@ async function openPeekChatModal() {
   `;
 
   try {
-    // Hanya membaca data. Tidak ada update status/read di seluruh fungsi Peek Chat.
     const snapshot = await db.ref('chats').once('value');
     const data = snapshot.val();
     container.innerHTML = '';
@@ -3707,7 +3806,6 @@ async function deleteSelectedPeekMessage() {
   if (!confirmed) return;
 
   try {
-    // Sengaja hanya remove path pesan. Tidak pernah menulis status/read.
     await db.ref(`chats/${messageId}`).remove();
     if (row) row.remove();
     closePeekMessageActionMenu();
@@ -3718,7 +3816,6 @@ async function deleteSelectedPeekMessage() {
       container.innerHTML = `<div class="chat-placeholder">Tidak ada riwayat chat.</div>`;
     }
 
-    // Jika dashboard admin sedang dibuka, sinkronkan daftar media tanpa menyentuh chat biasa.
     if (document.getElementById('adminModal')?.style.display === 'flex') {
       loadAdminMediaList();
     }
@@ -4592,10 +4689,6 @@ async function recordCallLog(callId, terminalStatus, callDataOverride = null) {
 
     if (!callData) return;
 
-    /*
-     * Hanya satu client yang boleh membuat pesan riwayat.
-     * Transaction ini mencegah caller dan callee mengirim log ganda.
-     */
     const claimResult = await callRef.child('logSent').transaction(function(value) {
       return value === true ? undefined : true;
     });
@@ -4925,6 +5018,7 @@ function createVoicePeerConnection() {
 
   return callPeerConnection;
 }
+
 function attachActiveCallListeners() {
   if (!activeCallId || callListenersAttached) return;
   callListenersAttached = true;
