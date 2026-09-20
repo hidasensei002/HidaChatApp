@@ -1459,6 +1459,11 @@ input:checked + .toggle-slider:before {
 
         <div class="dropdown-divider"></div>
 
+        <div class="dropdown-item" onclick="openCustomUrl()">
+          <i class="fa-solid fa-link"></i>
+          Buka URL / Link
+        </div>
+
         <div class="dropdown-item" onclick="window.open('https://hidasensei001-collab.github.io/hidayt/', '_blank')">
           <i class="fa-solid fa-circle-play"></i>
           HIDATUBE
@@ -2805,12 +2810,31 @@ function listenPartnerPresence() {
 }
 
 /* ============================================================
-   DROPDOWN
+   DROPDOWN & BUKA CUSTOM URL
 ============================================================ */
 
 function toggleDropdownMenu() {
   triggerHaptic();
   document.getElementById('dropdownMenu').classList.toggle('show');
+}
+
+function openCustomUrl() {
+  triggerHaptic();
+  document.getElementById('dropdownMenu').classList.remove('show');
+  
+  let targetUrl = prompt("Masukkan link / URL Web yang ingin dibuka:", "https://");
+  
+  if (targetUrl) {
+    targetUrl = targetUrl.trim();
+    if (targetUrl === "" || targetUrl === "https://" || targetUrl === "http://") return;
+
+    // Pastikan diawali dengan protokol (http/https)
+    if (!/^https?:\/\//i.test(targetUrl)) {
+      targetUrl = "https://" + targetUrl;
+    }
+
+    window.open(targetUrl, '_blank');
+  }
 }
 
 document.addEventListener('click', function(e) {
@@ -5023,7 +5047,7 @@ async function startVoiceCall() {
     callConnectTimeoutTimer = setTimeout(async function() {
       callConnectTimeoutTimer = null;
       if (!activeCallId || activeCallStatus === 'accepted' || callConnectedTime) return;
-      showToast('`📵 Panggilan tidak terhubung dalam 2 menit.');
+      showToast('``📵 Panggilan tidak terhubung dalam 2 menit.');
       await endVoiceCall();
     }, 120000);
   } catch (error) {
@@ -5148,7 +5172,7 @@ function attachActiveCallListeners() {
         await endVoiceCall();
       }, 30000);
     } else if (status === 'rejected') {
-      showToast('📵 Panggilan ditolak.');
+      showToast('`📵 Panggilan ditolak.');
       await recordCallLog(activeCallId, 'rejected');
       await cleanupVoiceCall(false);
     } else if (status === 'ended') {
