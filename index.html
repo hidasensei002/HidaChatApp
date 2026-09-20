@@ -2324,7 +2324,7 @@ function handleBgToggleChange(enabled) {
 
 const INITIAL_MESSAGE_LIMIT = 50;
 const MESSAGE_PAGE_SIZE = 50;
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 30 * 1024 * 1024;
 
 const IMAGE_MAX_WIDTH = 1280;
 const IMAGE_MAX_HEIGHT = 1280;
@@ -4023,7 +4023,7 @@ async function handleFileUpload(event) {
   if (!file) return;
 
   if (file.size > MAX_FILE_SIZE) {
-    showToast('⚠️ Ukuran file maksimal 10MB!');
+    showToast('⚠️ Ukuran file maksimal 30MB!');
     event.target.value = '';
     return;
   }
@@ -4549,7 +4549,7 @@ async function uploadAvatar(targetUser, event) {
   if (!file) return;
 
   if (file.size > MAX_FILE_SIZE) {
-    showToast('⚠️ Ukuran foto profil maksimal 10MB!');
+    showToast('⚠️ Ukuran foto profil maksimal 30MB!');
     event.target.value = '';
     return;
   }
