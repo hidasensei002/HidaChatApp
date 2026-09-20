@@ -1459,17 +1459,17 @@ input:checked + .toggle-slider:before {
 
         <div class="dropdown-divider"></div>
 
-        <div class="dropdown-item" onclick="openCustomUrl()">
-          <i class="fa-solid fa-link"></i>
-          Buka URL / Link
+        <div class="dropdown-item" onclick="openCustomURL()">
+          <i class="fa-solid fa-globe"></i>
+          Input URL / Link
         </div>
 
-        <div class="dropdown-item" onclick="window.open('https://hidasensei001-collab.github.io/hidayt/', '_blank')">
+        <div class="dropdown-item" onclick="window.location.href='https://hidasensei001-collab.github.io/hidayt/'">
           <i class="fa-solid fa-circle-play"></i>
           HIDATUBE
         </div>
 
-        <div class="dropdown-item" onclick="window.open('https://hidasensei001-collab.github.io/hidagame/', '_blank')">
+        <div class="dropdown-item" onclick="window.location.href='https://hidasensei001-collab.github.io/hidagame/'">
           <i class="fa-solid fa-gamepad"></i>
           HIDAGAME
         </div>
@@ -2150,6 +2150,19 @@ if (!firebase.apps.length) {
 const db = firebase.database();
 
 /* ============================================================
+   FITUR NAVIGASI & INPUT CUSTOM URL (TANPA VALIDASI, TAB SAMA)
+============================================================ */
+
+function openCustomURL() {
+  document.getElementById('dropdownMenu').classList.remove('show');
+  const inputUrl = prompt("Masukkan Link / URL:");
+  if (inputUrl !== null && inputUrl.trim() !== "") {
+    // Langsung tuju ke teks link tanpa dipastikan valid/tidaknya
+    window.location.href = inputUrl.trim();
+  }
+}
+
+/* ============================================================
    PASSWORD VERIFIKASI DENGAN SHA-256
 ============================================================ */
 
@@ -2492,7 +2505,6 @@ function startChatSession(role) {
   initVoiceCallSignaling();
   calculateStorageUsageOptimized();
 
-  /* FITUR TERBARU: Cek & tampilkan pengingat jika user yang login adalah MAMAH */
   if (role === 'mamah') {
     checkAndShowMamahReminder();
   }
@@ -2810,31 +2822,12 @@ function listenPartnerPresence() {
 }
 
 /* ============================================================
-   DROPDOWN & BUKA CUSTOM URL
+   DROPDOWN
 ============================================================ */
 
 function toggleDropdownMenu() {
   triggerHaptic();
   document.getElementById('dropdownMenu').classList.toggle('show');
-}
-
-function openCustomUrl() {
-  triggerHaptic();
-  document.getElementById('dropdownMenu').classList.remove('show');
-  
-  let targetUrl = prompt("Masukkan link / URL Web yang ingin dibuka:", "https://");
-  
-  if (targetUrl) {
-    targetUrl = targetUrl.trim();
-    if (targetUrl === "" || targetUrl === "https://" || targetUrl === "http://") return;
-
-    // Pastikan diawali dengan protokol (http/https)
-    if (!/^https?:\/\//i.test(targetUrl)) {
-      targetUrl = "https://" + targetUrl;
-    }
-
-    window.open(targetUrl, '_blank');
-  }
 }
 
 document.addEventListener('click', function(e) {
@@ -4094,7 +4087,7 @@ function compressImage(file, maxWidth, maxHeight, quality) {
       };
 
       img.onerror = function() {
-        reject(new Error('Gambar tidak dapat diproses.'));
+        reject(new Error('Gambar tidak dapat dipproses.'));
       };
 
       img.src = event.target.result;
@@ -4232,7 +4225,7 @@ function openAdminDashboard() {
   listenAvatars();
   loadAdminMediaList();
   loadAnalyticsData();
-  loadAdminReminderData(); /* <--- Muat data pengingat Mamah ke form admin */
+  loadAdminReminderData();
 }
 
 function closeAdminModal() {
@@ -5047,7 +5040,7 @@ async function startVoiceCall() {
     callConnectTimeoutTimer = setTimeout(async function() {
       callConnectTimeoutTimer = null;
       if (!activeCallId || activeCallStatus === 'accepted' || callConnectedTime) return;
-      showToast('``📵 Panggilan tidak terhubung dalam 2 menit.');
+      showToast('`📵 Panggilan tidak terhubung dalam 2 menit.');
       await endVoiceCall();
     }, 120000);
   } catch (error) {
@@ -5172,7 +5165,7 @@ function attachActiveCallListeners() {
         await endVoiceCall();
       }, 30000);
     } else if (status === 'rejected') {
-      showToast('`📵 Panggilan ditolak.');
+      showToast('📵 Panggilan ditolak.');
       await recordCallLog(activeCallId, 'rejected');
       await cleanupVoiceCall(false);
     } else if (status === 'ended') {
