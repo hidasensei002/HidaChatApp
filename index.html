@@ -895,7 +895,7 @@ input:checked + .toggle-slider:before {
 .admin-avatar-grid {
   display:flex;
   gap:12px;
-  justify-style:space-around;
+  justify-content:space-around;
   align-items:center;
 }
 
@@ -2181,7 +2181,56 @@ async function sha256(str) {
 ============================================================ */
 
 // Default fallback list (10 terawal)
-let bgList = Array.from({ length: 10 }, (_, i) => `bg${String(i + 1).padStart(3, '0')}.webp`); let currentBgUrl = ''; let bgDeck = []; let isBgAnimEnabled = true;  // Fungsi untuk mengacak urutan array (Fisher-Yates Shuffle) function shuffleArray(array) {   const arr = [...array];   for (let i = arr.length - 1; i > 0; i--) {     const j = Math.floor(Math.random() * (i + 1));     [arr[i], arr[j]] = [arr[j], arr[i]];   }   return arr; }  // Mengambil background acak tanpa pengulangan langsung function getNextRandomBg() {   if (bgList.length === 0) return 'bg001.webp';   if (bgList.length === 1) return bgList[0];    if (bgDeck.length === 0) {     bgDeck = shuffleArray(bgList);     // Jika elemen pertama di deck baru sama dengan background yang sedang tampil, tukar posisi     if (bgDeck[bgDeck.length - 1] === currentBgUrl && bgDeck.length > 1) {       const temp = bgDeck[bgDeck.length - 1];       bgDeck[bgDeck.length - 1] = bgDeck[0];       bgDeck[0] = temp;     }   }   return bgDeck.pop(); }  function setChatBackground(bgUrl) {   const container = document.getElementById('messagesContainer');   const peekContainer = document.getElementById('peekMessagesContainer');   if (!container) return;    currentBgUrl = bgUrl \vert{}\vert{} currentBgUrl \vert{}\vert{} bgList[0];    if (!isBgAnimEnabled) {     container.style.backgroundImage = 'none';     container.style.backgroundColor = '#07201b';     if (peekContainer) {       peekContainer.style.backgroundImage = 'none';       peekContainer.style.backgroundColor = '#07201b';     }     return;   }    const bgStyle = `linear-gradient(rgba(11, 20, 26, 0.82), rgba(11, 20, 26, 0.82)), url('${currentBgUrl}')`;
+let bgList = Array.from({ length: 10 }, (_, i) => `bg${String(i + 1).padStart(3, '0')}.webp`);
+let currentBgUrl = '';
+let bgDeck = [];
+let isBgAnimEnabled = true;
+
+// Fungsi untuk mengacak urutan array (Fisher-Yates Shuffle)
+function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// Mengambil background acak tanpa pengulangan langsung
+function getNextRandomBg() {
+  if (bgList.length === 0) return 'bg001.webp';
+  if (bgList.length === 1) return bgList[0];
+
+  if (bgDeck.length === 0) {
+    bgDeck = shuffleArray(bgList);
+    // Jika elemen pertama di deck baru sama dengan background yang sedang tampil, tukar posisi
+    if (bgDeck[bgDeck.length - 1] === currentBgUrl && bgDeck.length > 1) {
+      const temp = bgDeck[bgDeck.length - 1];
+      bgDeck[bgDeck.length - 1] = bgDeck[0];
+      bgDeck[0] = temp;
+    }
+  }
+  return bgDeck.pop();
+}
+
+function setChatBackground(bgUrl) {
+  const container = document.getElementById('messagesContainer');
+  const peekContainer = document.getElementById('peekMessagesContainer');
+  if (!container) return;
+
+  currentBgUrl = bgUrl || currentBgUrl || bgList[0];
+
+  if (!isBgAnimEnabled) {
+    container.style.backgroundImage = 'none';
+    container.style.backgroundColor = '#07201b';
+    if (peekContainer) {
+      peekContainer.style.backgroundImage = 'none';
+      peekContainer.style.backgroundColor = '#07201b';
+    }
+    return;
+  }
+
+  const bgStyle = `linear-gradient(rgba(11, 20, 26, 0.82), rgba(11, 20, 26, 0.82)), url('${currentBgUrl}')`;
 
   container.style.backgroundImage = bgStyle;
   container.style.backgroundColor = 'var(--bg-dark)';
@@ -2199,7 +2248,202 @@ let bgList = Array.from({ length: 10 }, (_, i) => `bg${String(i + 1).padStart(3,
 // Memindai secara otomatis file bg001.webp hingga bg100.webp yang ada di server/folder
 async function scanAndInitBackgrounds() {
   const maxCandidates = 100; // Mendukung hingga bg100.webp
-  const candidates = Array.from({ length: maxCandidates }, (_, i) => `bg${String(i + 1).padStart(3, '0')}.webp`);    const probePromise = (url) => new Promise((resolve) => {     const img = new Image();     img.onload = () => resolve(url);     img.onerror = () => resolve(null);     img.src = url;   });    const results = await Promise.all(candidates.map(probePromise));   const found = results.filter(Boolean);    if (found.length > 0) {     bgList = found;   } }  function initAutoBackgroundRotation() {   const savedBgAnim = localStorage.getItem('bgAnimEnabled');   if (savedBgAnim !== null) {     isBgAnimEnabled = savedBgAnim === 'true';   } else {     isBgAnimEnabled = true;   }    const toggleInput = document.getElementById('bgAnimToggle');   if (toggleInput) {     toggleInput.checked = isBgAnimEnabled;   }    // Pilih background acak untuk tampilan pertama   const initialBg = getNextRandomBg();   setChatBackground(initialBg);    // Jalankan pemindaian otomatis di background untuk mendeteksi file baru (misal bg012.webp, bg055.webp, dll)   scanAndInitBackgrounds().then(() => {     bgDeck = []; // Reset deck agar menyertakan semua background baru yang terdeteksi   });    // Rotasi acak setiap 30 detik   setInterval(() => {     if (isBgAnimEnabled) {       const nextBg = getNextRandomBg();       setChatBackground(nextBg);     }   }, 30000); }  function toggleBackgroundAnimation(event) {   if (event.target.tagName === 'INPUT') return;   const toggleInput = document.getElementById('bgAnimToggle');   if (toggleInput) {     toggleInput.checked = !toggleInput.checked;     handleBgToggleChange(toggleInput.checked);   } }  function handleBgToggleChange(enabled) {   isBgAnimEnabled = enabled;   localStorage.setItem('bgAnimEnabled', enabled);   setChatBackground(currentBgUrl);   triggerHaptic();    if (enabled) {     showToast('✨ Background animasi diaktifkan');   } else {     showToast('🎨 Background polos (hijau tua) diaktifkan');   } }  /* ============================================================    KONFIGURASI OPTIMASI ============================================================ */  const INITIAL_MESSAGE_LIMIT = 50; const MESSAGE_PAGE_SIZE = 50; const MAX_FILE_SIZE = 10 * 1024 * 1024;  const IMAGE_MAX_WIDTH = 1280; const IMAGE_MAX_HEIGHT = 1280; const IMAGE_QUALITY = 0.78;  const AVATAR_MAX_WIDTH = 500; const AVATAR_MAX_HEIGHT = 500; const AVATAR_QUALITY = 0.72;  /* ============================================================    GLOBAL STATE & MEMORY CACHE ============================================================ */  let currentUser = null; let partnerUser = null;  let totalStorageBytes = 0; let userAvatars = { papah:null, mamah:null };  let allMessages = []; const messageMap = new Map(); const objectUrlCache = new Map();  let latestMessagesQuery = null; let oldestMessageKey = null; let newestMessageKey = null; let hasMoreOlderMessages = true; let isLoadingOlder = false;  let activeFilter = null; let currentSessionRef = null; let sessionStartTime = null;  let analyticsSelectedUser = 'papah'; let hourlyChartInstance = null; let cachedUserSessions = [];  let mediaRecorder = null; let audioChunks = []; let isRecording = false; let recordTimerInterval = null; let recordSeconds = 0;  let userNearBottom = true;  let selectedMessageId = null; let replyTargetMessage = null; let messageLongPressTimer = null; let suppressMessageClick = false;  let adminMediaItems = []; let adminMediaViewMode = 'grid'; let adminMediaFilter = 'all'; let selectedPeekMessageId = null; let peekLongPressTimer = null; let peekSuppressClick = false;  let activeCallId = null; let activeCallRole = null; let activeCallRef = null; let activeCallStatusRef = null; let localCallStream = null; let remoteCallStream = null; let callPeerConnection = null; let callCandidatesQueue = []; let callRemoteDescriptionReady = false; let callListenersAttached = false; let callRemoteCandidatesAttached = false; let callFinalizing = false;  let callLogStartTime = null; let callLogAcceptedTime = null; let callConnectedTime = null; let callDurationInterval = null; let callConnectTimeoutTimer = null; let callRemoteTrackReceived = false; let typingStopTimer = null; let typingPresenceRef = null;  /* State Pengingat Mamah */ let mamahReminderData = { reminder1: '', reminder2: '' };  /* ============================================================    UTILITAS PERFORMANSA ============================================================ */  function getDisplayUrl(dataUrl) {   if (!dataUrl) return '';   if (!dataUrl.startsWith('data:')) return dataUrl;      if (objectUrlCache.has(dataUrl)) {     return objectUrlCache.get(dataUrl);   }    try {     const blob = dataURLToBlob(dataUrl);     const objUrl = URL.createObjectURL(blob);     objectUrlCache.set(dataUrl, objUrl);     return objUrl;   } catch (e) {     return dataUrl;   } }  function triggerHaptic() {   if (navigator.vibrate) {     try { navigator.vibrate(15); } catch(e){}   } }  function sanitizeFileName(name) {   return (name \vert{}\vert{} 'file').replace(/[^a-zA-Z0-9._-]/g, '_'); }  if (window.visualViewport) {   window.visualViewport.addEventListener('resize', function() {     const app = document.querySelector('.app-container');     if (app) {       app.style.height = `${window.visualViewport.height}px`;
+  const candidates = Array.from({ length: maxCandidates }, (_, i) => `bg${String(i + 1).padStart(3, '0')}.webp`);
+
+  const probePromise = (url) => new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(url);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+
+  const results = await Promise.all(candidates.map(probePromise));
+  const found = results.filter(Boolean);
+
+  if (found.length > 0) {
+    bgList = found;
+  }
+}
+
+function initAutoBackgroundRotation() {
+  const savedBgAnim = localStorage.getItem('bgAnimEnabled');
+  if (savedBgAnim !== null) {
+    isBgAnimEnabled = savedBgAnim === 'true';
+  } else {
+    isBgAnimEnabled = true;
+  }
+
+  const toggleInput = document.getElementById('bgAnimToggle');
+  if (toggleInput) {
+    toggleInput.checked = isBgAnimEnabled;
+  }
+
+  // Pilih background acak untuk tampilan pertama
+  const initialBg = getNextRandomBg();
+  setChatBackground(initialBg);
+
+  // Jalankan pemindaian otomatis di background untuk mendeteksi file baru (misal bg012.webp, bg055.webp, dll)
+  scanAndInitBackgrounds().then(() => {
+    bgDeck = []; // Reset deck agar menyertakan semua background baru yang terdeteksi
+  });
+
+  // Rotasi acak setiap 30 detik
+  setInterval(() => {
+    if (isBgAnimEnabled) {
+      const nextBg = getNextRandomBg();
+      setChatBackground(nextBg);
+    }
+  }, 30000);
+}
+
+function toggleBackgroundAnimation(event) {
+  if (event.target.tagName === 'INPUT') return;
+  const toggleInput = document.getElementById('bgAnimToggle');
+  if (toggleInput) {
+    toggleInput.checked = !toggleInput.checked;
+    handleBgToggleChange(toggleInput.checked);
+  }
+}
+
+function handleBgToggleChange(enabled) {
+  isBgAnimEnabled = enabled;
+  localStorage.setItem('bgAnimEnabled', enabled);
+  setChatBackground(currentBgUrl);
+  triggerHaptic();
+
+  if (enabled) {
+    showToast('✨ Background animasi diaktifkan');
+  } else {
+    showToast('🎨 Background polos (hijau tua) diaktifkan');
+  }
+}
+
+/* ============================================================
+   KONFIGURASI OPTIMASI
+============================================================ */
+
+const INITIAL_MESSAGE_LIMIT = 50;
+const MESSAGE_PAGE_SIZE = 50;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+const IMAGE_MAX_WIDTH = 1280;
+const IMAGE_MAX_HEIGHT = 1280;
+const IMAGE_QUALITY = 0.78;
+
+const AVATAR_MAX_WIDTH = 500;
+const AVATAR_MAX_HEIGHT = 500;
+const AVATAR_QUALITY = 0.72;
+
+/* ============================================================
+   GLOBAL STATE & MEMORY CACHE
+============================================================ */
+
+let currentUser = null;
+let partnerUser = null;
+
+let totalStorageBytes = 0;
+let userAvatars = { papah:null, mamah:null };
+
+let allMessages = [];
+const messageMap = new Map();
+const objectUrlCache = new Map();
+
+let latestMessagesQuery = null;
+let oldestMessageKey = null;
+let newestMessageKey = null;
+let hasMoreOlderMessages = true;
+let isLoadingOlder = false;
+
+let activeFilter = null;
+let currentSessionRef = null;
+let sessionStartTime = null;
+
+let analyticsSelectedUser = 'papah';
+let hourlyChartInstance = null;
+let cachedUserSessions = [];
+
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+let recordTimerInterval = null;
+let recordSeconds = 0;
+
+let userNearBottom = true;
+
+let selectedMessageId = null;
+let replyTargetMessage = null;
+let messageLongPressTimer = null;
+let suppressMessageClick = false;
+
+let adminMediaItems = [];
+let adminMediaViewMode = 'grid';
+let adminMediaFilter = 'all';
+let selectedPeekMessageId = null;
+let peekLongPressTimer = null;
+let peekSuppressClick = false;
+
+let activeCallId = null;
+let activeCallRole = null;
+let activeCallRef = null;
+let activeCallStatusRef = null;
+let localCallStream = null;
+let remoteCallStream = null;
+let callPeerConnection = null;
+let callCandidatesQueue = [];
+let callRemoteDescriptionReady = false;
+let callListenersAttached = false;
+let callRemoteCandidatesAttached = false;
+let callFinalizing = false;
+
+let callLogStartTime = null;
+let callLogAcceptedTime = null;
+let callConnectedTime = null;
+let callDurationInterval = null;
+let callConnectTimeoutTimer = null;
+let callRemoteTrackReceived = false;
+let typingStopTimer = null;
+let typingPresenceRef = null;
+
+/* State Pengingat Mamah */
+let mamahReminderData = { reminder1: '', reminder2: '' };
+
+/* ============================================================
+   UTILITAS PERFORMANSA
+============================================================ */
+
+function getDisplayUrl(dataUrl) {
+  if (!dataUrl) return '';
+  if (!dataUrl.startsWith('data:')) return dataUrl;
+  
+  if (objectUrlCache.has(dataUrl)) {
+    return objectUrlCache.get(dataUrl);
+  }
+
+  try {
+    const blob = dataURLToBlob(dataUrl);
+    const objUrl = URL.createObjectURL(blob);
+    objectUrlCache.set(dataUrl, objUrl);
+    return objUrl;
+  } catch (e) {
+    return dataUrl;
+  }
+}
+
+function triggerHaptic() {
+  if (navigator.vibrate) {
+    try { navigator.vibrate(15); } catch(e){}
+  }
+}
+
+function sanitizeFileName(name) {
+  return (name || 'file').replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', function() {
+    const app = document.querySelector('.app-container');
+    if (app) {
+      app.style.height = `${window.visualViewport.height}px`;
     }
   });
 }
@@ -4844,7 +5088,7 @@ async function startVoiceCall() {
     callConnectTimeoutTimer = setTimeout(async function() {
       callConnectTimeoutTimer = null;
       if (!activeCallId || activeCallStatus === 'accepted' || callConnectedTime) return;
-      showToast('``📵 Panggilan tidak terhubung dalam 2 menit.');
+      showToast('📵 Panggilan tidak terhubung dalam 2 menit.');
       await endVoiceCall();
     }, 120000);
   } catch (error) {
@@ -4969,7 +5213,7 @@ function attachActiveCallListeners() {
         await endVoiceCall();
       }, 30000);
     } else if (status === 'rejected') {
-      showToast('`📵 Panggilan ditolak.');
+      showToast('... Panggilan ditolak.');
       await recordCallLog(activeCallId, 'rejected');
       await cleanupVoiceCall(false);
     } else if (status === 'ended') {
