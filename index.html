@@ -842,27 +842,135 @@ input:checked + .toggle-slider:before {
 }
 
 /* =========================
-   IMAGE MODAL
+   IMAGE MODAL & LIGHTBOX ADVANCED
 ========================= */
 
 #imageModal {
   display:none;
   flex-direction:column;
+  justify-content:center;
+  align-items:center;
   z-index:100000;
-  background:rgba(0,0,0,.9);
+  background:rgba(0,0,0,.92);
+  position:fixed;
+  inset:0;
+  touch-action:pan-y;
+  user-select:none;
+}
+
+#imageModal.is-fullscreen {
+  background:#000;
+  padding:0;
+}
+
+.lightbox-content-wrap {
+  width:100%;
+  height:75vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+}
+
+#imageModal.is-fullscreen .lightbox-content-wrap {
+  height:100vh;
 }
 
 .lightbox-img {
   max-width:90%;
-  max-height:70vh;
+  max-height:100%;
   object-fit:contain;
   border-radius:8px;
-  margin-bottom:20px;
+  transition:transform 0.15s ease;
+}
+
+.lightbox-video {
+  max-width:90%;
+  max-height:100%;
+  border-radius:8px;
+  outline:none;
+  display:none;
+}
+
+#imageModal.is-fullscreen .lightbox-img,
+#imageModal.is-fullscreen .lightbox-video {
+  max-width:100vw;
+  max-height:100vh;
+  width:100%;
+  height:100%;
+  border-radius:0;
+  object-fit:contain;
 }
 
 .lightbox-actions {
   display:flex;
-  gap:12px;
+  gap:10px;
+  align-items:center;
+  justify-content:center;
+  margin-top:15px;
+  z-index:10;
+  flex-wrap:wrap;
+}
+
+#imageModal.is-fullscreen .lightbox-actions {
+  position:absolute;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(17,27,33,0.85);
+  padding:8px 16px;
+  border-radius:30px;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,0.1);
+  margin-top:0;
+}
+
+.lightbox-nav-btn {
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  background:rgba(32,44,51,0.75);
+  color:#e9edef;
+  border:1px solid rgba(255,255,255,0.15);
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+  cursor:pointer;
+  z-index:15;
+  backdrop-filter:blur(6px);
+  transition:background 0.2s, transform 0.2s;
+}
+
+.lightbox-nav-btn:active {
+  transform:translateY(-50%) scale(0.92);
+}
+
+.lightbox-nav-btn.prev {
+  left:12px;
+}
+
+.lightbox-nav-btn.next {
+  right:12px;
+}
+
+.lightbox-indicator {
+  position:absolute;
+  top:16px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(0,0,0,0.6);
+  color:#e9edef;
+  padding:4px 12px;
+  border-radius:14px;
+  font-size:12px;
+  font-weight:600;
+  z-index:15;
+  backdrop-filter:blur(6px);
 }
 
 /* =========================
@@ -1661,21 +1769,51 @@ input:checked + .toggle-slider:before {
 
 </div>
 
+<!-- MODAL MEDIA LIGHTBOX ADVANCED -->
 <div id="imageModal" class="overlay-screen">
 
-  <img
-    id="lightboxImg"
-    class="lightbox-img"
-    src=""
-    alt="Preview"
-  >
+  <div class="lightbox-indicator" id="lightboxIndicator">1 / 1</div>
+
+  <button class="lightbox-nav-btn prev" id="btnPrevMedia" onclick="navigateLightbox(-1)" title="Sebelumnya">
+    <i class="fa-solid fa-chevron-left"></i>
+  </button>
+
+  <div class="lightbox-content-wrap">
+    <img
+      id="lightboxImg"
+      class="lightbox-img"
+      src=""
+      alt="Preview"
+    >
+    <video
+      id="lightboxVideo"
+      class="lightbox-video"
+      src=""
+      controls
+      playsinline
+    ></video>
+  </div>
+
+  <button class="lightbox-nav-btn next" id="btnNextMedia" onclick="navigateLightbox(1)" title="Sesudahnya">
+    <i class="fa-solid fa-chevron-right"></i>
+  </button>
 
   <div class="lightbox-actions">
 
     <button
       class="btn-action"
+      id="btnFullscreenImg"
+      onclick="toggleLightboxFullscreen()"
+      style="width:auto;padding:10px 18px;background:#00a884;color:#111b21;"
+    >
+      <i class="fa-solid fa-expand" id="iconFullscreen"></i>
+      <span id="textFullscreen">Layar Penuh</span>
+    </button>
+
+    <button
+      class="btn-action"
       id="btnDownloadImg"
-      style="width:auto;padding:10px 20px;"
+      style="width:auto;padding:10px 18px;"
     >
       <i class="fa-solid fa-download"></i>
       Unduh
@@ -1684,7 +1822,7 @@ input:checked + .toggle-slider:before {
     <button
       class="btn-action"
       onclick="closeImageModal()"
-      style="width:auto;padding:10px 20px;background:#374151;color:#fff;"
+      style="width:auto;padding:10px 18px;background:#374151;color:#fff;"
     >
       Tutup
     </button>
@@ -3507,7 +3645,7 @@ function createMessageElement(msg) {
   }
 
   if (msg.media) {
-    const mediaElement = createMediaElement(msg.media);
+    const mediaElement = createMediaElement(msg.media, msg.id);
     if (mediaElement) {
       bubble.appendChild(mediaElement);
     }
@@ -3752,7 +3890,7 @@ document.addEventListener('click', function(e) {
    MEDIA ELEMENT
 ============================================================ */
 
-function createMediaElement(media) {
+function createMediaElement(media, msgId) {
   if (!media || !media.url) return null;
 
   const type = media.type || '';
@@ -3784,7 +3922,7 @@ function createMediaElement(media) {
 
     img.onclick = function(event) {
       event.stopPropagation();
-      openImageModal(displayUrl, media.name);
+      openImageModal(displayUrl, media.name, msgId);
     };
 
     wrapper.appendChild(img);
@@ -3914,7 +4052,7 @@ function createPeekMessageElement(msg) {
   }
 
   if (msg.media) {
-    const media = createMediaElement(msg.media);
+    const media = createMediaElement(msg.media, msg.id);
     if (media) bubble.appendChild(media);
   }
 
@@ -4169,32 +4307,217 @@ function dataURLToBlob(dataUrl) {
 }
 
 /* ============================================================
-   IMAGE LIGHTBOX
+   IMAGE / MEDIA LIGHTBOX WITH FULLSCREEN & SWIPE NAVIGATION
 ============================================================ */
 
-function openImageModal(url, filename) {
+let currentLightboxIndex = -1;
+let currentLightboxMediaList = [];
+let lbTouchStartX = 0;
+let lbTouchStartY = 0;
+let lbTouchEndX = 0;
+let lbTouchEndY = 0;
+
+function getLightboxMediaList() {
+  return allMessages.filter(function(m) {
+    return m && m.media && m.media.url && m.media.type && (
+      m.media.type.startsWith('image/') ||
+      m.media.type.startsWith('video/')
+    );
+  });
+}
+
+function openImageModal(url, filename, msgId) {
   triggerHaptic();
   const modal = document.getElementById('imageModal');
-  const img = document.getElementById('lightboxImg');
-  const button = document.getElementById('btnDownloadImg');
+  if (!modal) return;
 
-  img.src = url;
-  button.onclick = function() {
-    downloadBase64(url, sanitizeFileName(filename));
-  };
+  currentLightboxMediaList = getLightboxMediaList();
+
+  if (currentLightboxMediaList.length > 0) {
+    if (msgId) {
+      currentLightboxIndex = currentLightboxMediaList.findIndex(m => m.id === msgId);
+    } else {
+      currentLightboxIndex = currentLightboxMediaList.findIndex(m => m.media && m.media.url === url);
+    }
+  }
+
+  if (currentLightboxIndex === -1) {
+    currentLightboxMediaList = [{
+      id: msgId || 'temp',
+      media: { url: url, name: filename || 'File', type: 'image/jpeg' }
+    }];
+    currentLightboxIndex = 0;
+  }
 
   modal.style.display = 'flex';
+  updateLightboxDisplay();
+  initLightboxSwipeListeners();
+}
+
+function updateLightboxDisplay() {
+  if (!currentLightboxMediaList || currentLightboxMediaList.length === 0) return;
+
+  if (currentLightboxIndex < 0) currentLightboxIndex = currentLightboxMediaList.length - 1;
+  if (currentLightboxIndex >= currentLightboxMediaList.length) currentLightboxIndex = 0;
+
+  const item = currentLightboxMediaList[currentLightboxIndex];
+  if (!item || !item.media) return;
+
+  const media = item.media;
+  const displayUrl = getDisplayUrl(media.url);
+  const type = media.type || '';
+  const name = media.name || 'File';
+
+  const img = document.getElementById('lightboxImg');
+  const video = document.getElementById('lightboxVideo');
+  const indicator = document.getElementById('lightboxIndicator');
+  const buttonDownload = document.getElementById('btnDownloadImg');
+  const prevBtn = document.getElementById('btnPrevMedia');
+  const nextBtn = document.getElementById('btnNextMedia');
+
+  if (indicator) {
+    indicator.innerText = `${currentLightboxIndex + 1} / ${currentLightboxMediaList.length}`;
+    indicator.style.display = currentLightboxMediaList.length > 1 ? 'block' : 'none';
+  }
+
+  if (prevBtn) prevBtn.style.display = currentLightboxMediaList.length > 1 ? 'flex' : 'none';
+  if (nextBtn) nextBtn.style.display = currentLightboxMediaList.length > 1 ? 'flex' : 'none';
+
+  if (type.startsWith('video/')) {
+    if (img) img.style.display = 'none';
+    if (video) {
+      video.style.display = 'block';
+      video.src = displayUrl;
+      video.play().catch(e => {});
+    }
+  } else {
+    if (video) {
+      video.pause();
+      video.style.display = 'none';
+      video.src = '';
+    }
+    if (img) {
+      img.style.display = 'block';
+      img.src = displayUrl;
+    }
+  }
+
+  if (buttonDownload) {
+    buttonDownload.onclick = function() {
+      downloadBase64(displayUrl, sanitizeFileName(name));
+    };
+  }
+}
+
+function navigateLightbox(direction) {
+  if (!currentLightboxMediaList || currentLightboxMediaList.length <= 1) return;
+  triggerHaptic();
+  currentLightboxIndex += direction;
+  updateLightboxDisplay();
+}
+
+function toggleLightboxFullscreen() {
+  triggerHaptic();
+  const modal = document.getElementById('imageModal');
+  const icon = document.getElementById('iconFullscreen');
+  const text = document.getElementById('textFullscreen');
+
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    if (modal.requestFullscreen) {
+      modal.requestFullscreen().catch(e => {});
+    } else if (modal.webkitRequestFullscreen) {
+      modal.webkitRequestFullscreen();
+    }
+    modal.classList.add('is-fullscreen');
+    if (icon) icon.className = 'fa-solid fa-compress';
+    if (text) text.innerText = 'Kecilkan';
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(e => {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+    modal.classList.remove('is-fullscreen');
+    if (icon) icon.className = 'fa-solid fa-expand';
+    if (text) text.innerText = 'Layar Penuh';
+  }
+}
+
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+function handleFullscreenChange() {
+  const modal = document.getElementById('imageModal');
+  const icon = document.getElementById('iconFullscreen');
+  const text = document.getElementById('textFullscreen');
+
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    if (modal) modal.classList.remove('is-fullscreen');
+    if (icon) icon.className = 'fa-solid fa-expand';
+    if (text) text.innerText = 'Layar Penuh';
+  }
 }
 
 function closeImageModal() {
   const modal = document.getElementById('imageModal');
   const img = document.getElementById('lightboxImg');
+  const video = document.getElementById('lightboxVideo');
 
-  modal.style.display = 'none';
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(e => {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+
+  if (modal) {
+    modal.classList.remove('is-fullscreen');
+    modal.style.display = 'none';
+  }
+
+  if (video) {
+    video.pause();
+    video.src = '';
+  }
 
   setTimeout(function() {
-    img.src = '';
+    if (img) img.src = '';
   }, 100);
+}
+
+function initLightboxSwipeListeners() {
+  const modal = document.getElementById('imageModal');
+  if (!modal || modal.dataset.swipeBound === 'true') return;
+  modal.dataset.swipeBound = 'true';
+
+  modal.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1) {
+      lbTouchStartX = e.touches[0].clientX;
+      lbTouchStartY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  modal.addEventListener('touchend', function(e) {
+    if (e.changedTouches.length === 1) {
+      lbTouchEndX = e.changedTouches[0].clientX;
+      lbTouchEndY = e.changedTouches[0].clientY;
+      handleLightboxSwipe();
+    }
+  }, { passive: true });
+}
+
+function handleLightboxSwipe() {
+  const diffX = lbTouchEndX - lbTouchStartX;
+  const diffY = lbTouchEndY - lbTouchStartY;
+
+  if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 40) {
+    if (diffX < 0) {
+      navigateLightbox(1);
+    } else {
+      navigateLightbox(-1);
+    }
+  }
 }
 
 function downloadBase64(url, filename) {
@@ -4607,7 +4930,7 @@ function setAdminMediaFilter(filter) {
   renderAdminMediaItems();
 }
 
-function createAdminMediaPreview(media) {
+function createAdminMediaPreview(media, msgId) {
   const wrap = document.createElement('div');
   wrap.className = 'admin-media-preview-wrap';
   const displayUrl = getDisplayUrl(media.url);
@@ -4620,7 +4943,7 @@ function createAdminMediaPreview(media) {
     img.decoding = 'async';
     img.alt = media.name || 'Foto';
     img.className = 'media-preview-admin';
-    img.onclick = function() { openImageModal(displayUrl, media.name); };
+    img.onclick = function() { openImageModal(displayUrl, media.name, msgId); };
     wrap.appendChild(img);
   } else if (category === 'video') {
     const video = document.createElement('video');
@@ -4699,7 +5022,7 @@ function renderAdminMediaItems() {
     header.appendChild(del);
     row.appendChild(header);
 
-    row.appendChild(createAdminMediaPreview(media));
+    row.appendChild(createAdminMediaPreview(media, item.msgId));
 
     const meta = document.createElement('div');
     meta.className = 'media-item-meta';
@@ -5531,20 +5854,26 @@ function escapeHtml(value) {
 }
 
 /* ============================================================
-   MODAL CLOSE CONTROLS
+   MODAL CLOSE CONTROLS & KEYBOARD NAVIGATION
 ============================================================ */
 
 document.addEventListener('click', function(e) {
-  const imageModal = document.getElementById('imageModal');
-  if (e.target === imageModal) closeImageModal();
-
   const storageModal = document.getElementById('storageModal');
   if (e.target === storageModal) closeStorageModal();
 });
 
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    closeImageModal();
+  const imageModal = document.getElementById('imageModal');
+  if (imageModal && imageModal.style.display === 'flex') {
+    if (e.key === 'ArrowLeft') {
+      navigateLightbox(-1);
+    } else if (e.key === 'ArrowRight') {
+      navigateLightbox(1);
+    } else if (e.key === 'Escape') {
+      closeImageModal();
+      closeStorageModal();
+    }
+  } else if (e.key === 'Escape') {
     closeStorageModal();
   }
 });
