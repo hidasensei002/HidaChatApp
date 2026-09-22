@@ -4929,15 +4929,22 @@ async function uploadAvatar(targetUser, event) {
   }
 
   try {
-    showToast('⏳ Mengompres foto profil...');
-    const compressed = await compressImage(
-      file,
-      AVATAR_MAX_WIDTH,
-      AVATAR_MAX_HEIGHT,
-      AVATAR_QUALITY
-    );
+    const isWebp = file.type === 'image/webp' || file.name.toLowerCase().endsWith('.webp');
 
-    await db.ref(`avatars/${targetUser}`).set(compressed.dataUrl);
+    if (isWebp) {
+      showToast('⏳ Memproses foto profil WebP...');
+      const dataUrl = await fileToDataURL(file);
+      await db.ref(`avatars/${targetUser}`).set(dataUrl);
+    } else {
+      showToast('⏳ Mengompres foto profil...');
+      const compressed = await compressImage(
+        file,
+        AVATAR_MAX_WIDTH,
+        AVATAR_MAX_HEIGHT,
+        AVATAR_QUALITY
+      );
+      await db.ref(`avatars/${targetUser}`).set(compressed.dataUrl);
+    }
     showToast('✅ Foto profil diperbarui!');
   } catch (error) {
     console.error(error);
@@ -5255,15 +5262,15 @@ async function recordCallLog(callId, terminalStatus, callDataOverride = null) {
     let text = '';
 
     if (terminalStatus === 'rejected') {
-      text = '📵 Panggilan Ditolak';
+      text = '... Panggilan Ditolak';
     } else if (acceptedAt > 0 || terminalStatus === 'accepted' || callData.status === 'accepted') {
       const durationSeconds = acceptedAt > 0
         ? Math.max(0, Math.floor((endedAt - acceptedAt) / 1000))
         : 0;
 
-      text = `📞 Panggilan Suara — ${formatCallDuration(durationSeconds)}`;
+      text = `... Panggilan Suara — ${formatCallDuration(durationSeconds)}`;
     } else {
-      text = '📵 Panggilan Tak Terjawab';
+      text = '... Panggilan Tak Terjawab';
     }
 
     const msgRef = db.ref('chats').push();
@@ -5462,7 +5469,7 @@ async function startVoiceCall() {
     callConnectTimeoutTimer = setTimeout(async function() {
       callConnectTimeoutTimer = null;
       if (!activeCallId || activeCallStatus === 'accepted' || callConnectedTime) return;
-      showToast('📵 Panggilan tidak terhubung dalam 2 menit.');
+      showToast('... Panggilan tidak terhubung dalam 2 menit.');
       await endVoiceCall();
     }, 120000);
   } catch (error) {
