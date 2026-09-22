@@ -199,6 +199,7 @@ input[type="password"] {
   font-size:18px;
   color:#fff;
   overflow:hidden;
+  cursor:pointer;
 }
 
 .avatar img {
@@ -1495,7 +1496,7 @@ input:checked + .toggle-slider:before {
 
     <div class="user-profile">
 
-      <div class="avatar" id="partnerAvatar">
+      <div class="avatar" id="partnerAvatar" onclick="openAvatarFullscreen('partner')" title="Lihat Foto Profil">
         <i class="fa-solid fa-user"></i>
       </div>
 
@@ -2073,6 +2074,8 @@ input:checked + .toggle-slider:before {
           <div
             class="avatar"
             id="adminPapahAvatar"
+            onclick="openAvatarFullscreen('papah')"
+            title="Lihat Foto Profil Papah"
           >
             <i class="fa-solid fa-user-tie"></i>
           </div>
@@ -2104,6 +2107,8 @@ input:checked + .toggle-slider:before {
           <div
             class="avatar"
             id="adminMamahAvatar"
+            onclick="openAvatarFullscreen('mamah')"
+            title="Lihat Foto Profil Mamah"
           >
             <i class="fa-solid fa-user-nurse"></i>
           </div>
@@ -2892,6 +2897,44 @@ function updatePartnerAvatar() {
     element.innerHTML = partnerUser === 'mamah'
       ? '<i class="fa-solid fa-user-nurse"></i>'
       : '<i class="fa-solid fa-user-tie"></i>';
+  }
+}
+
+function openAvatarFullscreen(target) {
+  let avUrl = null;
+  let titleName = 'Foto Profil';
+
+  if (target === 'papah') {
+    avUrl = userAvatars.papah;
+    titleName = 'Foto Profil Papah';
+  } else if (target === 'mamah') {
+    avUrl = userAvatars.mamah;
+    titleName = 'Foto Profil Mamah';
+  } else {
+    avUrl = userAvatars[partnerUser];
+    titleName = partnerUser === 'mamah' ? 'Foto Profil Mamah' : 'Foto Profil Papah';
+  }
+
+  if (!avUrl) {
+    showToast('Foto profil belum diatur.');
+    return;
+  }
+
+  const displayUrl = getDisplayUrl(avUrl);
+  openImageModal(displayUrl, titleName, 'avatar_' + target);
+
+  const modal = document.getElementById('imageModal');
+  if (modal) {
+    if (modal.requestFullscreen) {
+      modal.requestFullscreen().catch(e => {});
+    } else if (modal.webkitRequestFullscreen) {
+      modal.webkitRequestFullscreen();
+    }
+    modal.classList.add('is-fullscreen');
+    const icon = document.getElementById('iconFullscreen');
+    const text = document.getElementById('textFullscreen');
+    if (icon) icon.className = 'fa-solid fa-compress';
+    if (text) text.innerText = 'Kecilkan';
   }
 }
 
