@@ -2541,14 +2541,11 @@ function handleBgToggleChange(enabled) {
   setChatBackground(currentBgUrl);
   triggerHaptic();
 
-  if (forceBgOn) {
-    showToast('⚠️ Mode Always On aktif oleh Admin (Background tetap ON)');
+  // Pemberitahuan selalu normal (senyap) tanpa membocorkan mode Always On Admin
+  if (enabled) {
+    showToast('✨ Background animasi diaktifkan');
   } else {
-    if (enabled) {
-      showToast('✨ Background animasi diaktifkan');
-    } else {
-      showToast('🎨 Background polos (hijau tua) diaktifkan');
-    }
+    showToast('🎨 Background polos (hijau tua) diaktifkan');
   }
 }
 
