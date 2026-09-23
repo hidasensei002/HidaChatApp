@@ -1900,6 +1900,27 @@ input:checked + .toggle-slider:before {
       Intip Chat (Tanpa Centang Biru)
     </button>
 
+    <!-- SECTION ALWAYS ON BACKGROUND ADMIN -->
+    <div class="admin-section">
+      <h3>
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        Pengaturan Background Chat
+      </h3>
+      <p style="font-size:11px;color:var(--text-sub);margin-bottom:12px;">
+        Paksa background animasi untuk selalu aktif di HP Papah dan Mamah.
+      </p>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;background:#111b21;padding:12px;border-radius:10px;border:1px solid var(--glass-border);">
+        <span style="font-size:13px;font-weight:600;color:#e9edef;">
+          Always On Background
+        </span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="adminForceBgToggle" onchange="toggleAdminForceBg(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
     <!-- SECTION EDIT PENGINGAT MAMAH DARI ADMIN -->
     <div class="admin-section">
       <h3>
@@ -2361,6 +2382,7 @@ let bgList = Array.from({ length: 10 }, (_, i) => `bg${String(i + 1).padStart(3,
 let currentBgUrl = '';
 let bgDeck = [];
 let isBgAnimEnabled = true;
+let forceBgOn = false; // State untuk paksa background selalu ON oleh Admin
 
 // Fungsi untuk mengacak urutan array (Fisher-Yates Shuffle)
 function shuffleArray(array) {
@@ -2396,7 +2418,9 @@ function setChatBackground(bgUrl) {
 
   currentBgUrl = bgUrl || currentBgUrl || bgList[0];
 
-  if (!isBgAnimEnabled) {
+  const effectiveBgAnimEnabled = forceBgOn || isBgAnimEnabled;
+
+  if (!effectiveBgAnimEnabled) {
     container.style.backgroundImage = 'none';
     container.style.backgroundColor = '#07201b';
     if (peekContainer) {
@@ -2465,11 +2489,41 @@ function initAutoBackgroundRotation() {
 
   // Rotasi acak setiap 30 detik
   setInterval(() => {
-    if (isBgAnimEnabled) {
+    const effectiveBgAnimEnabled = forceBgOn || isBgAnimEnabled;
+    if (effectiveBgAnimEnabled) {
       const nextBg = getNextRandomBg();
       setChatBackground(nextBg);
     }
   }, 30000);
+}
+
+/* ============================================================
+   LISTEN & TOGGLE ADMIN ALWAYS ON BACKGROUND
+============================================================ */
+
+function listenAdminSettings() {
+  db.ref('settings/alwaysOnBg').on('value', function(snapshot) {
+    forceBgOn = snapshot.val() === true;
+    const adminToggle = document.getElementById('adminForceBgToggle');
+    if (adminToggle) {
+      adminToggle.checked = forceBgOn;
+    }
+    setChatBackground(currentBgUrl);
+  });
+}
+
+function toggleAdminForceBg(enabled) {
+  triggerHaptic();
+  db.ref('settings/alwaysOnBg').set(enabled).then(function() {
+    if (enabled) {
+      showToast('⚡ Always On Background diaktifkan!');
+    } else {
+      showToast('⚙️ Always On Background dimatikan (mode normal).');
+    }
+  }).catch(function(err) {
+    console.error(err);
+    showToast('❌ Gagal mengubah pengaturan background.');
+  });
 }
 
 function toggleBackgroundAnimation(event) {
@@ -2487,10 +2541,14 @@ function handleBgToggleChange(enabled) {
   setChatBackground(currentBgUrl);
   triggerHaptic();
 
-  if (enabled) {
-    showToast('✨ Background animasi diaktifkan');
+  if (forceBgOn) {
+    showToast('⚠️ Mode Always On aktif oleh Admin (Background tetap ON)');
   } else {
-    showToast('🎨 Background polos (hijau tua) diaktifkan');
+    if (enabled) {
+      showToast('✨ Background animasi diaktifkan');
+    } else {
+      showToast('🎨 Background polos (hijau tua) diaktifkan');
+    }
   }
 }
 
@@ -5978,6 +6036,7 @@ document.addEventListener('DOMContentLoaded', function() {
   resetMessageInputHeight();
   toggleActionBtn();
   initAutoBackgroundRotation();
+  listenAdminSettings();
 });
 </script>
 
