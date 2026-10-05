@@ -1740,7 +1740,7 @@ input:checked + .toggle-slider:before {
           <button type="button" class="admin-media-filter active" data-media-filter="all" onclick="setAdminMediaFilter('all')">Semuanya</button>
           <button type="button" class="admin-media-filter" data-media-filter="image" onclick="setAdminMediaFilter('image')">Foto 🖼️</button>
           <button type="button" class="admin-media-filter" data-media-filter="video" onclick="setAdminMediaFilter('video')">Video 🎥</button>
-          <button type="button" class="admin-media-filter" data-media-filter="audio" onclick="setAdminMediaFilter('audio')">Pesan Suara 🎙️️</button>
+          <button type="button" class="admin-media-filter" data-media-filter="audio" onclick="setAdminMediaFilter('audio')">Pesan Suara 🎙</button>
           <button type="button" class="admin-media-filter" data-media-filter="file" onclick="setAdminMediaFilter('file')">File/Dokumen 📄</button>
         </div>
       </div>
@@ -3308,7 +3308,7 @@ async function copySelectedMessage() {
 
   let copyText = msg.text || (msg.media ? (msg.media.name ? `📎 ${msg.media.name}` : '📎 Pesan media') : '');
   if (!copyText) {
-    showToast('ℹ️️ Tidak ada teks untuk disalin.');
+    showToast('ℹ Tidak ada teks untuk disalin.');
     closeMessageActionMenu();
     return;
   }
@@ -3766,7 +3766,6 @@ function calculateStorageUsageOptimized() {
       totalStorageBytes = value;
       updateStorageUI();
     } else {
-      // Inisialisasi dari ukuran terakhir tanpa menyedot seluruh node chats
       totalStorageBytes = 24.8 * 1024 * 1024;
       updateStorageUI();
       db.ref('meta/storageBytes').set(totalStorageBytes);
@@ -4017,7 +4016,9 @@ async function uploadAvatar(targetUser, event) {
   }
 }
 
-/* ADMIN MEDIA LIST (DENGAN INDEXING HEMAT) */
+/* ============================================================
+   ADMIN MEDIA LIST (DIPERBAIKI 100%: DUKUNG FORMAT LAMA & BARU)
+============================================================ */
 function getAdminMediaCategory(media) {
   const type = (media && media.type || '').toLowerCase();
   if (type.startsWith('image/')) return 'image';
@@ -4045,7 +4046,8 @@ function renderAdminMediaItems() {
   if (!container) return;
 
   const filtered = adminMediaItems.filter(item => adminMediaFilter === 'all' || getAdminMediaCategory(item.media) === adminMediaFilter);
-  document.getElementById('adminMediaCount').textContent = `${filtered.length} media`;
+  const countEl = document.getElementById('adminMediaCount');
+  if (countEl) countEl.textContent = `${filtered.length} media`;
   container.innerHTML = '';
 
   if (!filtered.length) {
@@ -4062,10 +4064,13 @@ function renderAdminMediaItems() {
 
     const name = document.createElement('div');
     name.className = 'media-item-name';
-    name.innerHTML = `<i class="fa-solid fa-file"></i> ${escapeHtml(item.media.name || 'Berkas')}`;
+    const cat = getAdminMediaCategory(item.media);
+    const iconClass = cat === 'image' ? 'fa-image' : cat === 'video' ? 'fa-film' : cat === 'audio' ? 'fa-microphone' : 'fa-file-lines';
+    name.innerHTML = `<i class="fa-solid ${iconClass}"></i> ${escapeHtml(item.media.name || 'Berkas')}`;
 
     const del = document.createElement('button');
     del.className = 'media-item-delete';
+    del.title = 'Hapus media ini';
     del.innerHTML = '<i class="fa-solid fa-trash"></i>';
     del.onclick = () => deleteSingleMedia(item.msgId, item.media.id);
 
@@ -4075,29 +4080,30 @@ function renderAdminMediaItems() {
 
     const wrap = document.createElement('div');
     wrap.className = 'admin-media-preview-wrap';
-    const displayUrl = item.media.url ? getDisplayUrl(item.media.url) : null;
+    const directUrl = item.media.url ? getDisplayUrl(item.media.url) : null;
 
-    if (displayUrl) {
-      if (getAdminMediaCategory(item.media) === 'image') {
-        const img = document.createElement('img');
-        img.src = displayUrl;
-        img.className = 'media-preview-admin';
-        img.onclick = () => openImageModal(displayUrl, item.media.name, item.msgId);
-        wrap.appendChild(img);
-      } else {
-        wrap.innerHTML = `<div style="font-size:11px;color:#cbd5da;">Klik untuk buka / unduh</div>`;
-        wrap.onclick = () => downloadBase64(displayUrl, item.media.name);
-      }
-    } else {
-      wrap.innerHTML = `<button type="button" class="btn-action" style="font-size:11px;padding:6px 12px;width:auto;"><i class="fa-solid fa-download"></i> Muat Pratinjau</button>`;
-      wrap.onclick = async () => {
-        wrap.innerHTML = `<span class="loading-spinner"></span>`;
-        const fetched = await fetchMediaData(item.media.id);
-        if (fetched) {
-          item.media.url = fetched;
-          renderAdminMediaItems();
+    if (directUrl) {
+      tampilkanKontenMedia(wrap, item.media, directUrl, item.msgId);
+    } else if (item.media.id) {
+      getCachedMedia(item.media.id).then(cached => {
+        if (cached) {
+          const disp = getDisplayUrl(cached);
+          item.media.url = disp;
+          tampilkanKontenMedia(wrap, item.media, disp, item.msgId);
+        } else {
+          wrap.innerHTML = `<button type="button" class="admin-file-download"><i class="fa-solid fa-eye"></i> Tampilkan Media</button>`;
+          wrap.onclick = async () => {
+            wrap.innerHTML = `<span class="loading-spinner"></span> Memuat...`;
+            const fetched = await fetchMediaData(item.media.id);
+            if (fetched) {
+              item.media.url = fetched;
+              tampilkanKontenMedia(wrap, item.media, fetched, item.msgId);
+            } else {
+              wrap.innerHTML = `<span style="font-size:11px;color:var(--danger);">Gagal memuat</span>`;
+            }
+          };
         }
-      };
+      });
     }
 
     row.appendChild(wrap);
@@ -4111,41 +4117,72 @@ function renderAdminMediaItems() {
   });
 }
 
+function tampilkanKontenMedia(wrap, media, displayUrl, msgId) {
+  wrap.innerHTML = '';
+  const cat = getAdminMediaCategory(media);
+
+  if (cat === 'image') {
+    const img = document.createElement('img');
+    img.src = displayUrl;
+    img.className = 'media-preview-admin';
+    img.alt = media.name || 'Foto';
+    img.onclick = () => openImageModal(displayUrl, media.name, msgId);
+    wrap.appendChild(img);
+  } else if (cat === 'video') {
+    const video = document.createElement('video');
+    video.src = displayUrl;
+    video.controls = true;
+    video.preload = 'metadata';
+    video.playsInline = true;
+    video.className = 'media-preview-admin';
+    wrap.appendChild(video);
+  } else if (cat === 'audio') {
+    const audio = document.createElement('audio');
+    audio.src = displayUrl;
+    audio.controls = true;
+    audio.preload = 'metadata';
+    audio.style.width = '100%';
+    wrap.appendChild(audio);
+  } else {
+    const card = document.createElement('div');
+    card.className = 'admin-file-card';
+    card.innerHTML = `
+      <i class="fa-solid fa-file-lines"></i>
+      <button type="button" class="admin-file-download"><i class="fa-solid fa-download"></i> Unduh File</button>
+    `;
+    card.querySelector('button').onclick = () => downloadBase64(displayUrl, sanitizeFileName(media.name));
+    wrap.appendChild(card);
+  }
+}
+
 function loadAdminMediaList() {
   const container = document.getElementById('adminMediaList');
   if (!container) return;
   container.innerHTML = `<div style="font-size:12px;color:var(--text-sub);text-align:center;grid-column:1/-1;padding:18px;"><span class="loading-spinner"></span> Memuat berkas...</div>`;
 
-  db.ref('media_index').orderByChild('timestamp').limitToLast(60).once('value', function(snapshot) {
-    const data = snapshot.val();
+  db.ref('chats').orderByKey().limitToLast(100).once('value', function(snapshot) {
+    const data = snapshot.val() || {};
     adminMediaItems = [];
 
-    if (data) {
-      Object.keys(data).forEach(id => {
-        const itm = data[id];
+    Object.keys(data).forEach(function(msgId) {
+      const msg = data[msgId];
+      if (!msg || !msg.media) return;
+
+      if (msg.media.url || msg.media.id) {
         adminMediaItems.push({
-          msgId: itm.msgId || id,
-          sender: itm.sender,
-          timestamp: itm.timestamp,
-          media: { id: id, name: itm.name, type: itm.type, size: itm.size }
+          msgId: msgId,
+          sender: msg.sender,
+          timestamp: msg.timestamp || Date.now(),
+          media: msg.media
         });
-      });
-      adminMediaItems.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
-      renderAdminMediaItems();
-    } else {
-      // Fallback ke pesan chat terbaru (hanya 50 pesan terakhir)
-      db.ref('chats').orderByKey().limitToLast(50).once('value', function(chatSnap) {
-        const chatData = chatSnap.val() || {};
-        Object.keys(chatData).forEach(msgId => {
-          const m = chatData[msgId];
-          if (m && m.media) {
-            adminMediaItems.push({ msgId: msgId, sender: m.sender, timestamp: m.timestamp, media: m.media });
-          }
-        });
-        adminMediaItems.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
-        renderAdminMediaItems();
-      });
-    }
+      }
+    });
+
+    adminMediaItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    renderAdminMediaItems();
+  }).catch(function(error) {
+    console.error("Admin media load error:", error);
+    container.innerHTML = `<div style="font-size:12px;color:var(--danger);text-align:center;padding:18px;">❌ Gagal memuat daftar media.</div>`;
   });
 }
 
@@ -4210,7 +4247,7 @@ function closeStorageModal() {
 
 /* WEBRTC SUARA P2P (100% AMAN & TIDAK BERUBAH) */
 function getCallDisplayName(user) {
-  return user === 'mamah' ? 'Mamah ❤️' : 'Papah 💙';
+  return user === 'mamah' ? 'Mamah ❤️️' : 'Papah 💙';
 }
 
 function setVoiceCallAvatar(user) {
