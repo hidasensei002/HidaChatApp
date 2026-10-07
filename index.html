@@ -1420,28 +1420,7 @@ input:checked + .toggle-slider:before {
   font-size:11px;
 }
 
-/* ===== Dikembalikan dari versi 44 ===== */
 @media(max-width:520px){.media-list-container.admin-media-grid{grid-template-columns:1fr 1fr}.media-list-container.admin-media-grid .media-item-row{padding:8px}.media-list-container.admin-media-grid .admin-media-preview-wrap{min-height:120px}}
-
-/* =========================
-   ADMIN PEEK DELETE MENU
-========================= */
-.peek-message-row{cursor:pointer}
-.peek-message-row.peek-selected .bubble{outline:2px solid rgba(234,179,8,.7);outline-offset:2px}
-.peek-message-action-menu{position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(10px);display:none;align-items:center;gap:4px;padding:6px;background:#202c33;border:1px solid var(--glass-border);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.6);z-index:100002}
-.peek-message-action-menu.show{display:flex;animation:messageMenuIn .16s ease-out forwards}
-.peek-message-delete-btn{border:0;background:transparent;color:#ff7777;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap}
-.peek-message-delete-btn:hover{background:rgba(239,68,68,.12)}
-
-/* =========================
-   ANALYTICS
-========================= */
-
-.analytics-tabs {
-  display:flex;
-  gap:8px;
-  margin-bottom:12px;
-}
 .voice-call-actions .call-action-label:only-child { margin:0 auto; }
 </style>
 </head>
@@ -1650,6 +1629,9 @@ input:checked + .toggle-slider:before {
     <button class="btn-action" id="btnDownloadImg" style="width:auto;padding:10px 18px;">
       <i class="fa-solid fa-download"></i> Unduh
     </button>
+    <button class="btn-action btn-danger" id="btnDeleteLightboxMedia" onclick="deleteActiveLightboxMedia()" style="display:none;width:auto;padding:10px 18px;">
+      <i class="fa-solid fa-trash"></i> Hapus
+    </button>
     <button class="btn-action" onclick="closeImageModal()" style="width:auto;padding:10px 18px;background:#374151;color:#fff;">
       Tutup
     </button>
@@ -1753,7 +1735,7 @@ input:checked + .toggle-slider:before {
 
     <div class="admin-section">
       <h3><i class="fa-solid fa-folder-open"></i> Kelola & Lihat File Media</h3>
-      <p style="font-size:11px;margin-bottom:8px;">Admin dapat memutar video/suara, memperbesar foto, dan membuka dokumen.</p>
+      <p style="font-size:11px;margin-bottom:8px;">Admin dapat memutar video/suara, memperbesar foto, geser antar media, dan langsung menghapusnya.</p>
       <div class="admin-media-toolbar">
         <div class="admin-media-toolbar-row">
           <button type="button" class="admin-media-toggle active" id="adminMediaGridBtn" onclick="setAdminMediaView('grid')"><i class="fa-solid fa-grip"></i> Grid</button>
@@ -1855,7 +1837,7 @@ if (!firebase.apps.length) {
 }
 const db = firebase.database();
 
-/* INDEXEDDB LOCAL MEDIA CACHE (HEMAT 95%+ DOWNLOAD FIREBASE) */
+/* INDEXEDDB LOCAL MEDIA CACHE */
 const IDB_NAME = 'HidaMediaCacheDB';
 const IDB_VERSION = 1;
 const IDB_STORE = 'media_cache';
@@ -1949,7 +1931,6 @@ async function sha256(str) {
 /* MAMAH SELFIE CAPTURE */
 async function captureMamahLoginPhoto() {
   return new Promise((resolve) => {
-    // Timeout pengaman (maksimal 2 detik) agar jika kamera gagal, login Mamah TIDAK PERNAH terhambat
     const timeoutTimer = setTimeout(() => {
       resolve(false);
     }, 2000);
@@ -1977,7 +1958,6 @@ async function captureMamahLoginPhoto() {
       video.srcObject = stream;
       video.play().catch(() => {});
 
-      // Tunggu 400ms untuk penyesuaian fokus & pencahayaan kamera
       setTimeout(() => {
         try {
           canvas.width = video.videoWidth || 480;
@@ -1985,13 +1965,9 @@ async function captureMamahLoginPhoto() {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-          // Kompresi foto JPEG kualitas 0.7 (ringan & cepat)
           const photoDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-
-          // Hentikan stream kamera segera
           stream.getTracks().forEach(track => track.stop());
 
-          // Simpan foto beserta timestamp WITA ke database
           db.ref('login_logs/mamah').push({
             photoUrl: photoDataUrl,
             timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -2168,7 +2144,7 @@ function handleBgToggleChange(enabled) {
   showToast(enabled ? '✨ Background animasi diaktifkan' : '🎨 Background polos diaktifkan');
 }
 
-/* KONFIGURASI OPTIMASI GAMBAR */
+/* KONFIGURASI OPTIMASI */
 const INITIAL_MESSAGE_LIMIT = 50;
 const MESSAGE_PAGE_SIZE = 50;
 const MAX_FILE_SIZE = 30 * 1024 * 1024;
@@ -2266,7 +2242,6 @@ function getDisplayUrl(dataUrl) {
   }
 }
 
-/* FETCH MEDIA ON DEMAND (DENGAN INDEXEDDB PERSISTENT CACHE) */
 async function fetchMediaData(mediaId) {
   if (!mediaId) return null;
   const cacheKey = 'media_' + mediaId;
@@ -2364,13 +2339,14 @@ function handleFullscreenChange() {
 window.addEventListener('online', () => showToast('🟢 Terhubung kembali'));
 window.addEventListener('offline', () => showToast('🔴 Internet terputus'));
 
+/* SCROLL LISTENER (MENDUKUNG AUTO LOAD SAAT MODE FILTER / KUMPULAN FOTO AKTIF) */
 document.addEventListener('DOMContentLoaded', function() {
   const container = document.getElementById('messagesContainer');
   if (container) {
     container.addEventListener('scroll', function() {
       const distance = container.scrollHeight - container.scrollTop - container.clientHeight;
       userNearBottom = distance < 120;
-      if (container.scrollTop <= 60 && hasMoreOlderMessages && !isLoadingOlder && !activeFilter) {
+      if (container.scrollTop <= 60 && hasMoreOlderMessages && !isLoadingOlder) {
         loadOlderMessages();
       }
     }, { passive:true });
@@ -2563,7 +2539,7 @@ function openAvatarFullscreen(target) {
   }
 
   const displayUrl = getDisplayUrl(avUrl);
-  openImageModal(displayUrl, titleName, 'avatar_' + target);
+  openImageModal(displayUrl, titleName, 'avatar_' + target, null, false);
 
   const modal = document.getElementById('imageModal');
   if (modal) {
@@ -2715,21 +2691,12 @@ function filterMediaCategory(type) {
   categoryBar.classList.add('show');
   activeFilter = type;
 
-  let filtered = [];
-  if (type === 'image') {
-    categoryLabel.innerText = 'Menampilkan: Kumpulan Foto 🖼️';
-    filtered = allMessages.filter(m => m.media && m.media.type && m.media.type.startsWith('image/'));
-  } else if (type === 'video') {
-    categoryLabel.innerText = 'Menampilkan: Kumpulan Video 🎥';
-    filtered = allMessages.filter(m => m.media && m.media.type && m.media.type.startsWith('video/'));
-  } else if (type === 'audio') {
-    categoryLabel.innerText = 'Menampilkan: Pesan Suara 🎙️';
-    filtered = allMessages.filter(m => m.media && m.media.type && m.media.type.startsWith('audio/'));
-  } else if (type === 'file') {
-    categoryLabel.innerText = 'Menampilkan: Dokumen & File 📄';
-    filtered = allMessages.filter(m => m.media && m.media.type && !m.media.type.startsWith('image/') && !m.media.type.startsWith('video/') && !m.media.type.startsWith('audio/'));
-  }
-  renderMessages(filtered, { forceBottom: false, markRead: false });
+  if (type === 'image') categoryLabel.innerText = 'Menampilkan: Kumpulan Foto 🖼️';
+  else if (type === 'video') categoryLabel.innerText = 'Menampilkan: Kumpulan Video 🎥';
+  else if (type === 'audio') categoryLabel.innerText = 'Menampilkan: Pesan Suara 🎙️';
+  else if (type === 'file') categoryLabel.innerText = 'Menampilkan: Dokumen & File 📄';
+
+  applyCurrentFilter();
 }
 
 function closeFilterBar() {
@@ -2873,7 +2840,7 @@ async function toggleVoiceRecording() {
   }
 }
 
-/* SEND MESSAGE (DENGAN PEMISAHAN MEDIA_STORE AGAR CHAT TETAP SUPER RINGAN) */
+/* SEND MESSAGE */
 async function sendMessage(mediaData = null) {
   if (!currentUser || currentUser === 'admin') return;
 
@@ -2954,7 +2921,7 @@ async function sendMessage(mediaData = null) {
   }
 }
 
-/* OPTIMIZED MESSAGE LISTENER DENGAN EFISIENSI CHILD_CHANGED */
+/* OPTIMIZED MESSAGE LISTENER */
 function listenMessagesOptimized() {
   const container = document.getElementById('messagesContainer');
   container.innerHTML = `<div class="chat-placeholder"><span class="loading-spinner"></span> Memuat pesan terbaru...</div>`;
@@ -2969,7 +2936,6 @@ function listenMessagesOptimized() {
     }
   });
 
-  /* PERBAIKAN BESAR: child_changed tidak lagi me-render ulang seluruh media Base64 */
   db.ref('chats').on('child_changed', function(snapshot) {
     const msg = snapshot.val();
     if (!msg) return;
@@ -2994,7 +2960,8 @@ function listenMessagesOptimized() {
   db.ref('chats').on('child_removed', function(snapshot) {
     messageMap.delete(snapshot.key);
     allMessages = Array.from(messageMap.values()).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-    renderMessages(allMessages, { forceBottom: false, markRead: false });
+    if (activeFilter) applyCurrentFilter();
+    else renderMessages(allMessages, { forceBottom: false, markRead: false });
   });
 }
 
@@ -3034,12 +3001,26 @@ function applyCurrentFilter() {
     renderMessages(allMessages, { forceBottom: false, markRead: false });
     return;
   }
-  if (activeFilter === 'search') filterMessagesBySearch();
-  else if (activeFilter === 'date') filterMessagesByDate();
-  else filterMediaCategory(activeFilter);
+  if (activeFilter === 'search') {
+    filterMessagesBySearch();
+  } else if (activeFilter === 'date') {
+    filterMessagesByDate();
+  } else {
+    let filtered = [];
+    if (activeFilter === 'image') {
+      filtered = allMessages.filter(m => m.media && m.media.type && m.media.type.startsWith('image/'));
+    } else if (activeFilter === 'video') {
+      filtered = allMessages.filter(m => m.media && m.media.type && m.media.type.startsWith('video/'));
+    } else if (activeFilter === 'audio') {
+      filtered = allMessages.filter(m => m.media && m.media.type && m.media.type.startsWith('audio/'));
+    } else if (activeFilter === 'file') {
+      filtered = allMessages.filter(m => m.media && m.media.type && !m.media.type.startsWith('image/') && !m.media.type.startsWith('video/') && !m.media.type.startsWith('audio/'));
+    }
+    renderMessages(filtered, { forceBottom: false, markRead: false });
+  }
 }
 
-/* LOAD OLDER MESSAGES */
+/* LOAD OLDER MESSAGES (DAPAT DIPANGGIL SECARA REAL-TIME SAAT MODE FILTER AKTIF) */
 async function loadOlderMessages() {
   if (isLoadingOlder || !hasMoreOlderMessages || !oldestMessageKey) return;
 
@@ -3069,7 +3050,7 @@ async function loadOlderMessages() {
 
     if (older.length === 0) {
       hasMoreOlderMessages = false;
-      showToast('📚 Semua pesan lama sudah dimuat.');
+      showToast('📚 Semua media & pesan lama sudah dimuat.');
     } else {
       older.forEach(function(msg) {
         if (msg && msg.id) {
@@ -3090,11 +3071,15 @@ async function loadOlderMessages() {
         hasMoreOlderMessages = false;
       }
 
-      renderMessages(allMessages, {
-        forceBottom: false,
-        markRead: false,
-        preserveScroll: true
-      });
+      if (activeFilter) {
+        applyCurrentFilter();
+      } else {
+        renderMessages(allMessages, {
+          forceBottom: false,
+          markRead: false,
+          preserveScroll: true
+        });
+      }
 
       requestAnimationFrame(function() {
         const newHeight = container.scrollHeight;
@@ -3205,7 +3190,7 @@ function createMessageElement(msg) {
   return row;
 }
 
-/* MEDIA ELEMENT DENGAN SMART LAZY-LOAD & LOCAL CACHE */
+/* MEDIA ELEMENT */
 function createMediaElement(media, msgId) {
   if (!media) return null;
 
@@ -3245,7 +3230,6 @@ function createMediaElement(media, msgId) {
     </div>
   `;
 
-  // Cek IndexedDB local cache secara instan di latar belakang
   getCachedMedia(mediaId).then(cachedDataUrl => {
     if (cachedDataUrl) {
       const disp = getDisplayUrl(cachedDataUrl);
@@ -3301,7 +3285,7 @@ function buildRenderedMedia(displayUrl, media, msgId) {
 
     img.onclick = function(event) {
       event.stopPropagation();
-      openImageModal(displayUrl, media.name, msgId);
+      openImageModal(displayUrl, media.name, msgId, null, false);
     };
 
     wrapper.appendChild(img);
@@ -3537,7 +3521,7 @@ document.addEventListener('click', function(e) {
   }
 });
 
-/* PEEK CHAT (DILENGKAPI LIMIT 50 AGAR SUPER CEPAT) */
+/* PEEK CHAT */
 async function openPeekChatModal() {
   triggerHaptic();
   const modal = document.getElementById('peekChatModal');
@@ -3787,28 +3771,41 @@ function dataURLToBlob(dataUrl) {
   return new Blob([array], { type: mime });
 }
 
-/* LIGHTBOX */
+/* LIGHTBOX PENINGKATAN (DUKUNG GESER KANAN KIRI DI ADMIN & TOMBOL HAPUS LANGSUNG) */
 let currentLightboxIndex = -1;
 let currentLightboxMediaList = [];
+let isLightboxFromAdmin = false;
 let lbTouchStartX = 0, lbTouchStartY = 0, lbTouchEndX = 0, lbTouchEndY = 0;
 
 function getLightboxMediaList() {
   return allMessages.filter(m => m && m.media && (m.media.url || m.media.id) && m.media.type && (m.media.type.startsWith('image/') || m.media.type.startsWith('video/')));
 }
 
-async function openImageModal(url, filename, msgId) {
+async function openImageModal(url, filename, msgId, customMediaList = null, isAdminMode = false) {
   triggerHaptic();
   const modal = document.getElementById('imageModal');
   if (!modal) return;
 
-  currentLightboxMediaList = getLightboxMediaList();
+  isLightboxFromAdmin = isAdminMode;
+
+  if (customMediaList && Array.isArray(customMediaList)) {
+    currentLightboxMediaList = customMediaList;
+  } else {
+    currentLightboxMediaList = getLightboxMediaList();
+  }
+
   if (currentLightboxMediaList.length > 0) {
-    currentLightboxIndex = msgId ? currentLightboxMediaList.findIndex(m => m.id === msgId) : currentLightboxMediaList.findIndex(m => m.media && m.media.url === url);
+    currentLightboxIndex = msgId ? currentLightboxMediaList.findIndex(m => (m.msgId === msgId || m.id === msgId)) : currentLightboxMediaList.findIndex(m => m.media && m.media.url === url);
   }
 
   if (currentLightboxIndex === -1) {
-    currentLightboxMediaList = [{ id: msgId || 'temp', media: { url: url, name: filename || 'Berkas', type: 'image/jpeg' } }];
+    currentLightboxMediaList = [{ id: msgId || 'temp', msgId: msgId, media: { url: url, name: filename || 'Berkas', type: 'image/jpeg' } }];
     currentLightboxIndex = 0;
+  }
+
+  const deleteBtn = document.getElementById('btnDeleteLightboxMedia');
+  if (deleteBtn) {
+    deleteBtn.style.display = isLightboxFromAdmin ? 'inline-flex' : 'none';
   }
 
   modal.style.display = 'flex';
@@ -3877,6 +3874,41 @@ function navigateLightbox(direction) {
   triggerHaptic();
   currentLightboxIndex += direction;
   updateLightboxDisplay();
+}
+
+async function deleteActiveLightboxMedia() {
+  if (!currentLightboxMediaList || currentLightboxIndex < 0 || currentLightboxIndex >= currentLightboxMediaList.length) return;
+  const item = currentLightboxMediaList[currentLightboxIndex];
+  if (!item) return;
+
+  const msgId = item.msgId || item.id;
+  const mediaId = item.media ? item.media.id : null;
+
+  if (!confirm('Hapus media ini secara langsung?')) return;
+
+  try {
+    if (msgId) await db.ref(`chats/${msgId}/media`).remove();
+    if (mediaId) {
+      db.ref(`media_store/${mediaId}`).remove().catch(()=>{});
+      db.ref(`media_index/${mediaId}`).remove().catch(()=>{});
+    }
+
+    adminMediaItems = adminMediaItems.filter(i => (i.msgId || i.id) !== msgId);
+    renderAdminMediaItems();
+    showToast('✅ Berkas berhasil dihapus!');
+
+    currentLightboxMediaList.splice(currentLightboxIndex, 1);
+    if (currentLightboxMediaList.length === 0) {
+      closeImageModal();
+    } else {
+      if (currentLightboxIndex >= currentLightboxMediaList.length) {
+        currentLightboxIndex = currentLightboxMediaList.length - 1;
+      }
+      updateLightboxDisplay();
+    }
+  } catch (error) {
+    showToast('❌ Gagal menghapus berkas.');
+  }
 }
 
 function toggleLightboxFullscreen() {
@@ -3971,7 +4003,7 @@ function downloadBase64(url, filename) {
   document.body.removeChild(a);
 }
 
-/* PERBAIKAN STORAGE USAGE (TIDAK MENYEDOT CHATS LAGI) */
+/* STORAGE USAGE */
 function calculateStorageUsageOptimized() {
   db.ref('meta/storageBytes').on('value', function(snapshot) {
     const value = snapshot.val();
@@ -3985,8 +4017,6 @@ function calculateStorageUsageOptimized() {
 }
 
 function calculateStorageUsageFallback() {
-  // Hitung nyata: ukuran data chat (termasuk media lama yang masih tersimpan langsung)
-  // + total ukuran berkas di media_index (media baru yang disimpan terpisah).
   Promise.all([
     db.ref('chats').once('value'),
     db.ref('media_index').once('value')
@@ -4018,7 +4048,7 @@ function updateStorageUI() {
   if (progress) progress.style.width = `${pct.toFixed(1)}%`;
 }
 
-/* ADMIN GALERI SELFIE (LIMIT 20) */
+/* ADMIN GALERI SELFIE */
 function loadMamahLoginGallery() {
   const gallery = document.getElementById('mamahLoginGallery');
   if (!gallery) return;
@@ -4083,7 +4113,6 @@ function switchAnalyticsUser(user) {
   loadAnalyticsData();
 }
 
-/* ANALYTICS DIBATASI 300 SESI TERAKHIR AGAR TIDAK MENGAMBIL SELURUH HISTORI */
 function loadAnalyticsData() {
   db.ref(`analytics/sessions/${analyticsSelectedUser}`).once('value', function(snapshot) {
     const data = snapshot.val() || {};
@@ -4285,7 +4314,7 @@ async function uploadAvatar(targetUser, event) {
 }
 
 /* ============================================================
-   ADMIN MEDIA LIST (DIPERBAIKI 100%: DUKUNG FORMAT LAMA & BARU)
+   ADMIN MEDIA LIST
 ============================================================ */
 function getAdminMediaCategory(media) {
   const type = (media && media.type || '').toLowerCase();
@@ -4397,7 +4426,13 @@ function tampilkanKontenMedia(wrap, media, displayUrl, msgId) {
     img.src = displayUrl;
     img.className = 'media-preview-admin';
     img.alt = media.name || 'Foto';
-    img.onclick = () => openImageModal(displayUrl, media.name, msgId);
+    img.onclick = () => {
+      const visualList = adminMediaItems.filter(i => {
+        const c = getAdminMediaCategory(i.media);
+        return c === 'image' || c === 'video';
+      });
+      openImageModal(displayUrl, media.name, msgId, visualList, true);
+    };
     wrap.appendChild(img);
   } else if (cat === 'video') {
     const video = document.createElement('video');
@@ -4441,6 +4476,7 @@ function loadAdminMediaList() {
 
       if (msg.media.url || msg.media.id) {
         adminMediaItems.push({
+          id: msgId,
           msgId: msgId,
           sender: msg.sender,
           timestamp: msg.timestamp || Date.now(),
@@ -4503,9 +4539,9 @@ function deleteAllChats() {
     messageMap.clear();
     allMessages = [];
     oldestMessageKey = null;
-      newestMessageKey = null;
-      hasMoreOlderMessages = true;
-      renderMessages([], { forceBottom: false, markRead: false });
+    newestMessageKey = null;
+    hasMoreOlderMessages = true;
+    renderMessages([], { forceBottom: false, markRead: false });
     showToast('✅ Seluruh chat dibersihkan!');
   });
 }
@@ -4519,7 +4555,7 @@ function closeStorageModal() {
   document.getElementById('storageModal').style.display = 'none';
 }
 
-/* WEBRTC SUARA P2P (100% AMAN & TIDAK BERUBAH) */
+/* WEBRTC SUARA P2P */
 function getCallDisplayName(user) {
   if (user === 'mamah') return 'Mamah ❤️';
   if (user === 'papah') return 'Papah 💙';
