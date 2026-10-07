@@ -1638,12 +1638,18 @@ input:checked + .toggle-slider:before {
   </div>
 </div>
 
-<!-- MODAL PENGINGAT MAMAH -->
+<!-- MODAL PENGINGAT MAMAH (DENGAN VISUAL ANIMASI/FOTO) -->
 <div id="mamahReminderModal" class="overlay-screen" style="display:none; z-index:99999;">
   <div class="modal-box">
     <i class="fa-solid fa-bell icon-head" style="color:var(--warning);"></i>
     <h2 id="mamahReminderTitle">Pengingat Khusus</h2>
-    <div id="mamahReminderText" style="font-size:14px; color:#e9edef; margin:16px 0 24px; line-height:1.5; text-align:center; white-space:pre-wrap; background:rgba(255,255,255,0.05); padding:14px; border-radius:12px; border:1px solid var(--glass-border);">...</div>
+    
+    <!-- Tempat Foto atau Animasi WebP di Atas Teks Pengingat -->
+    <div id="mamahReminderMediaWrapper" style="display:none; margin:14px auto 8px; justify-content:center; align-items:center; max-height:220px;">
+      <img id="mamahReminderMediaImg" src="" alt="Pengingat Visual" style="max-width:100%; max-height:220px; object-fit:contain; border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,0.5);">
+    </div>
+
+    <div id="mamahReminderText" style="font-size:14px; color:#e9edef; margin:14px 0 20px; line-height:1.5; text-align:center; white-space:pre-wrap; background:rgba(255,255,255,0.05); padding:14px; border-radius:12px; border:1px solid var(--glass-border);">...</div>
     <div id="mamahReminderActions" style="display:flex; gap:10px; justify-content:center;"></div>
   </div>
 </div>
@@ -1678,13 +1684,37 @@ input:checked + .toggle-slider:before {
       </div>
     </div>
 
+    <!-- KELOLA PENGINGAT KHUSUS MAMAH LENGKAP DENGAN UPLOAD VISUAL FOTO / WEBP ANIMASI -->
     <div class="admin-section">
       <h3><i class="fa-solid fa-bell"></i> Kelola Pengingat Khusus Mamah</h3>
       <p style="font-size:11px;color:var(--text-sub);margin-bottom:12px;">Pengingat ini hanya akan tampil pada saat Mamah login dan masuk ke chat.</p>
+
+      <!-- TEMPAT UPLOAD FOTO / ANIMASI PENGINGAT -->
+      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;color:#e9edef;">
+        <i class="fa-regular fa-image" style="color:var(--primary);"></i> Visual Pengingat (Foto / WebP Animasi Bergerak):
+      </label>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; background:#111b21; border:1px dashed var(--glass-border); padding:12px; border-radius:10px; margin-bottom:14px;">
+        <div id="adminReminderPreviewWrapper" style="display:none; width:100%; max-height:150px; overflow:hidden; border-radius:8px; justify-content:center; align-items:center;">
+          <img id="adminReminderPreviewImg" src="" alt="Pratinjau Pengingat" style="max-height:140px; max-width:100%; object-fit:contain; border-radius:6px;">
+        </div>
+        <div style="display:flex; gap:8px; width:100%; justify-content:center; flex-wrap:wrap;">
+          <button type="button" class="btn-action" style="margin-top:0; width:auto; padding:7px 14px; font-size:12px;" onclick="document.getElementById('adminReminderFileInput').click()">
+            <i class="fa-solid fa-upload"></i> Pilih Foto / Animasi
+          </button>
+          <button type="button" class="btn-action btn-danger" id="adminReminderRemoveMediaBtn" style="margin-top:0; width:auto; padding:7px 14px; font-size:12px; display:none;" onclick="removeAdminReminderMedia()">
+            <i class="fa-solid fa-trash"></i> Hapus Media
+          </button>
+        </div>
+        <input type="file" id="adminReminderFileInput" style="display:none;" accept="image/*,image/webp" onchange="handleAdminReminderFileUpload(event)">
+        <span style="font-size:10.5px; color:var(--text-sub);">Bisa berupa foto PNG/JPG biasa atau gambar animasi bergerak (.webp / .gif).</span>
+      </div>
+
       <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;color:#e9edef;">Pengingat Utama (Pertama):</label>
       <textarea id="adminReminder1Input" rows="3" placeholder="Tulis pengingat pertama di sini..." style="width:100%;background:#111b21;border:1px solid var(--glass-border);color:#fff;padding:10px;border-radius:8px;font-size:13px;outline:none;resize:vertical;margin-bottom:12px;"></textarea>
+      
       <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;color:#e9edef;">Pengingat Lanjutan (Jika Mamah Tekan "Belum"):</label>
       <textarea id="adminReminder2Input" rows="3" placeholder="Tulis pengingat lanjutan di sini..." style="width:100%;background:#111b21;border:1px solid var(--glass-border);color:#fff;padding:10px;border-radius:8px;font-size:13px;outline:none;resize:vertical;margin-bottom:14px;"></textarea>
+      
       <button class="btn-action" onclick="saveAdminReminder()">
         <i class="fa-solid fa-floppy-disk"></i> Simpan Pengingat
       </button>
@@ -2224,7 +2254,8 @@ let callRemoteTrackReceived = false;
 let typingStopTimer = null;
 let typingPresenceRef = null;
 
-let mamahReminderData = { reminder1: '', reminder2: '' };
+let mamahReminderData = { reminder1: '', reminder2: '', mediaUrl: '' };
+let adminPendingReminderMedia = '';
 
 /* UTILITAS PERFORMANSA */
 function getDisplayUrl(dataUrl) {
@@ -2339,7 +2370,7 @@ function handleFullscreenChange() {
 window.addEventListener('online', () => showToast('🟢 Terhubung kembali'));
 window.addEventListener('offline', () => showToast('🔴 Internet terputus'));
 
-/* SCROLL LISTENER (MENDUKUNG AUTO LOAD SAAT MODE FILTER / KUMPULAN FOTO AKTIF) */
+/* SCROLL LISTENER */
 document.addEventListener('DOMContentLoaded', function() {
   const container = document.getElementById('messagesContainer');
   if (container) {
@@ -2375,11 +2406,11 @@ function startChatSession(role) {
   }
 }
 
-/* PENGINGAT MAMAH */
+/* PENGINGAT MAMAH DENGAN GAMBAR / ANIMASI */
 function checkAndShowMamahReminder() {
   db.ref('reminder').once('value', function(snapshot) {
     const data = snapshot.val();
-    if (data && data.reminder1 && data.reminder1.trim() !== '') {
+    if (data && ((data.reminder1 && data.reminder1.trim() !== '') || data.mediaUrl)) {
       mamahReminderData = data;
       showMamahReminderStep1();
     }
@@ -2391,10 +2422,21 @@ function showMamahReminderStep1() {
   const textEl = document.getElementById('mamahReminderText');
   const actionsEl = document.getElementById('mamahReminderActions');
   const titleEl = document.getElementById('mamahReminderTitle');
+  const mediaWrap = document.getElementById('mamahReminderMediaWrapper');
+  const mediaImg = document.getElementById('mamahReminderMediaImg');
   if (!modal || !textEl || !actionsEl) return;
 
   if (titleEl) titleEl.innerText = 'Pengingat Khusus';
   textEl.innerText = mamahReminderData.reminder1 || '';
+
+  if (mamahReminderData.mediaUrl) {
+    mediaImg.src = getDisplayUrl(mamahReminderData.mediaUrl);
+    mediaWrap.style.display = 'flex';
+  } else {
+    mediaWrap.style.display = 'none';
+    mediaImg.src = '';
+  }
+
   actionsEl.innerHTML = `
     <button class="btn-action" style="background:var(--primary);color:#111b21;flex:1;" onclick="mamahReminderDone()">
       <i class="fa-solid fa-check"></i> Sudah
@@ -2441,12 +2483,71 @@ function closeMamahReminderModal() {
   if (modal) modal.style.display = 'none';
 }
 
+/* ADMIN KELOLA PENGINGAT */
 function loadAdminReminderData() {
   db.ref('reminder').once('value', function(snapshot) {
     const data = snapshot.val() || {};
     document.getElementById('adminReminder1Input').value = data.reminder1 || '';
     document.getElementById('adminReminder2Input').value = data.reminder2 || '';
+    adminPendingReminderMedia = data.mediaUrl || '';
+    updateAdminReminderPreview();
   });
+}
+
+function updateAdminReminderPreview() {
+  const wrapper = document.getElementById('adminReminderPreviewWrapper');
+  const img = document.getElementById('adminReminderPreviewImg');
+  const removeBtn = document.getElementById('adminReminderRemoveMediaBtn');
+
+  if (adminPendingReminderMedia) {
+    img.src = getDisplayUrl(adminPendingReminderMedia);
+    wrapper.style.display = 'flex';
+    removeBtn.style.display = 'inline-block';
+  } else {
+    img.src = '';
+    wrapper.style.display = 'none';
+    removeBtn.style.display = 'none';
+  }
+}
+
+async function handleAdminReminderFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (file.size > MAX_FILE_SIZE) {
+    showToast('⚠️ Ukuran visual maksimal 30MB!');
+    event.target.value = '';
+    return;
+  }
+
+  try {
+    showToast('⏳ Memproses visual...');
+    const isWebp = file.type === 'image/webp' || file.name.toLowerCase().endsWith('.webp');
+    const isGif = file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
+
+    if (isWebp || isGif) {
+      // Pertahankan data mentah agar animasi bergerak tetap hidup
+      const dataUrl = await fileToDataURL(file);
+      adminPendingReminderMedia = dataUrl;
+    } else {
+      const compressed = await compressImage(file, IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, IMAGE_QUALITY);
+      adminPendingReminderMedia = compressed.dataUrl;
+    }
+
+    updateAdminReminderPreview();
+    showToast('✅ Visual siap disimpan.');
+  } catch(e) {
+    showToast('❌ Gagal memproses visual.');
+  } finally {
+    event.target.value = '';
+  }
+}
+
+function removeAdminReminderMedia() {
+  triggerHaptic();
+  adminPendingReminderMedia = '';
+  updateAdminReminderPreview();
+  showToast('🗑️ Visual pengingat dihapus (klik Simpan untuk mempermanenkan)');
 }
 
 function saveAdminReminder() {
@@ -2456,10 +2557,11 @@ function saveAdminReminder() {
   db.ref('reminder').set({
     reminder1: r1,
     reminder2: r2,
+    mediaUrl: adminPendingReminderMedia || '',
     updatedAt: firebase.database.ServerValue.TIMESTAMP
   }).then(function() {
     triggerHaptic();
-    showToast('✅ Pengingat Mamah berhasil disimpan!');
+    showToast('✅ Pengingat & visual berhasil disimpan!');
   }).catch(function() {
     showToast('❌ Gagal menyimpan pengingat.');
   });
@@ -3020,7 +3122,7 @@ function applyCurrentFilter() {
   }
 }
 
-/* LOAD OLDER MESSAGES (DAPAT DIPANGGIL SECARA REAL-TIME SAAT MODE FILTER AKTIF) */
+/* LOAD OLDER MESSAGES */
 async function loadOlderMessages() {
   if (isLoadingOlder || !hasMoreOlderMessages || !oldestMessageKey) return;
 
@@ -3771,7 +3873,7 @@ function dataURLToBlob(dataUrl) {
   return new Blob([array], { type: mime });
 }
 
-/* LIGHTBOX PENINGKATAN (DUKUNG GESER KANAN KIRI DI ADMIN & TOMBOL HAPUS LANGSUNG) */
+/* LIGHTBOX PENINGKATAN */
 let currentLightboxIndex = -1;
 let currentLightboxMediaList = [];
 let isLightboxFromAdmin = false;
